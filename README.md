@@ -11,7 +11,7 @@ Tài liệu toàn tập về Phân tích Thiết kế Hạ tầng An toàn Mạn
 2. [02_Network_Infrastructure.md](file:///d:/School/PTTK_AnToanMang/02_Network_Infrastructure.md)
    - **Hạ tầng thiết bị mạng**: Vai trò trong hệ thống giám sát của Router (CoPP, uRPF), Switch L2/L3 (CAM Table, Port Security, DHCP Snooping, SPAN Port Mirroring), Next-Gen Firewall (State Table, DPI, App-ID, IPS) và Enterprise Server (Auditd, Event ID, Hardening).
 3. [03_Network_Segmentation.md](file:///d:/School/PTTK_AnToanMang/03_Network_Segmentation.md)
-   - **Phân đoạn mạng & Thiết kế VLAN**: Phân loại LAN/WAN/MAN, Chuẩn gắn thẻ 802.1Q, Inter-VLAN Routing, và kiến trúc phân đoạn mạng cô lập **Management (VLAN 99)** & **Monitoring / SIEM (VLAN 999)** kèm bộ Extended ACL bảo vệ.
+   - **Phân đoạn mạng & Thiết kế VLAN**: Phân loại LAN/WAN/MAN, Chuẩn gắn thẻ 802.1Q, Inter-VLAN Routing, và kiến trúc phân đoạn mạng cô lập **Management (VLAN 99)** & **Monitoring / SIEM (VLAN 100)** kèm bộ Extended ACL bảo vệ.
 4. [04_Core_Network_Services.md](file:///d:/School/PTTK_AnToanMang/04_Core_Network_Services.md)
    - **Các dịch vụ mạng cốt lõi**: DHCP & kỹ thuật điều tra số (Audit Trail), DNS & các nguy cơ DNS Tunneling / C2 Domain, NAT/PAT & giải pháp đối chiếu log IP thực, NTP (Đồng bộ thời gian chuẩn - Yêu cầu sống còn của hệ thống SIEM).
 5. [05_Routing_Protocols.md](file:///d:/School/PTTK_AnToanMang/05_Routing_Protocols.md)

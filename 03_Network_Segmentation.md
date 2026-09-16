@@ -1,157 +1,252 @@
-# CHUYÊN ĐỀ 3: NETWORK SEGMENTATION (PHÂN ĐOẠN MẠNG & THIẾT KẾ VLAN GIÁM SÁT)
+# GIÁO TRÌNH CHUYÊN ĐỀ 3: NETWORK SEGMENTATION (PHÂN ĐOẠN MẠNG & THIẾT KẾ VLAN GIÁM SÁT)
 
-> **Mục tiêu**: Nắm vững các mô hình phân loại mạng (LAN/WAN/MAN), nguyên lý hoạt động của công nghệ VLAN/Trunking (802.1Q), Inter-VLAN Routing, và phương pháp phân đoạn mạng chuyên biệt (**Management / Monitoring VLAN**) nhằm bảo vệ hệ thống giám sát SIEM trước các nguy cơ tấn công leo thang đặc quyền từ người dùng nội bộ.
-
----
-
-## 1. PHÂN LOẠI MẠNG THEO PHẠM VI ĐỊA LÝ (LAN / WAN / MAN)
-
-| Tiêu chí | Mạng LAN (Local Area Network) | Mạng MAN (Metropolitan Area Network) | Mạng WAN (Wide Area Network) |
-| :--- | :--- | :--- | :--- |
-| **Phạm vi địa lý** | Giới hạn trong một phòng, tòa nhà hoặc khuôn viên (Campus) $\le 1-2\text{ km}$ | Phạm vi một thành phố hoặc đô thị lớn ($10-50\text{ km}$) | Liên tỉnh, quốc gia, lục địa hoặc toàn cầu ($> 100\text{ km}$) |
-| **Tốc độ truyền dẫn** | Rất cao ($1\text{ Gbps} - 100\text{ Gbps}$) | Trung bình - Cao ($100\text{ Mbps} - 10\text{ Gbps}$) | Phụ thuộc băng thông ISP thuê bao ($10\text{ Mbps} - 10\text{ Gbps}$) |
-| **Độ trễ (Latency)** | Cực thấp ($< 1\text{ ms}$) | Thấp ($5 - 20\text{ ms}$) | Cao hơn ($20 - 150\text{ ms}$) |
-| **Môi trường & Công nghệ** | Cáp đồng xoắn đôi Cat6/Cat6A, Cáp quang OM3/OM4, Ethernet 802.3 | Metro Ethernet, FTTH, DWDM, Cáp quang đơn mốt | Cáp quang biển, Vệ tinh, Công nghệ MPLS, IPsec VPN, SD-WAN |
-| **Quyền sở hữu** | Doanh nghiệp tự trang bị và quản trị | Thuê từ nhà mạng viễn thông (Telco) | Doanh nghiệp thuê hạ tầng truyền dẫn của nhà mạng |
+> **Mục tiêu học tập**:
+> 1. Hiểu rõ sự khác biệt giữa các mô hình mạng **LAN, MAN, WAN** và vai trò của việc phân đoạn mạng trong kiến trúc phòng thủ chiều sâu (Defense-in-Depth).
+> 2. Nắm vững bản chất kỹ thuật của chuẩn đóng gói thẻ mạng **IEEE 802.1Q**, phân biệt cơ chế Access Port, Trunk Port, Native VLAN và các nguy cơ tấn công **VLAN Hopping**.
+> 3. Làm chủ phương pháp thiết kế phân đoạn mạng an ninh theo nguyên lý **Zero Trust / Least Privilege**, xây dựng vùng mạng **Management OOB (VLAN 99)** và **Monitoring / SIEM (VLAN 100)** cách ly an toàn.
+> 4. Thực hành cấu hình **Inter-VLAN Routing (Router-on-a-Stick & Layer 3 Switch SVI)** và xây dựng bộ chính sách **Extended ACL** bảo vệ hệ thống giám sát.
 
 ---
 
-## 2. CÔNG NGHỆ MẠNG LAN ẢO (VLAN - VIRTUAL LAN)
+## BÀI 1: PHÂN LOẠI MẠNG & NGUYÊN LÝ PHÂN ĐOẠN MẠNG
 
-### 2.1. Bản Chất & Lợi Ích Của VLAN
-- **Thu hẹp Broadcast Domain**: Về mặt mặc định trên Switch Layer 2, mọi cổng thuộc cùng một Broadcast Domain. VLAN chia nhỏ một switch vật lý thành nhiều switch logic, cô lập lưu lượng Broadcast trong từng phân vùng.
-- **Tăng cường bảo mật (Security Isolation)**: Các thiết bị thuộc hai VLAN khác nhau không thể giao tiếp trực tiếp ở Layer 2; mọi kết nối bắt buộc phải đi qua thiết bị Layer 3 (Router / Firewall / Layer 3 Switch), nơi áp dụng các chính sách kiểm soát truy cập (ACL / Firewall Rules).
-- **Linh hoạt quản trị**: Gom nhóm người dùng theo vai trò, chức năng phòng ban mà không phụ thuộc vào vị trí cổng cắm vật lý.
-
----
-
-### 2.2. Chuẩn Gắn Thẻ 802.1Q (VLAN Tagging & Trunking)
-
-Khi frame đi qua đường kết nối trung kế (Trunk Link) giữa các Switch hoặc giữa Switch và Router, một trường **802.1Q Tag dài 4 bytes** được chèn vào giữa trường Source MAC và EtherType:
+### 1.1. So Sánh Các Mô Hình Mạng (LAN vs MAN vs WAN)
 
 ```
-+-------------------------------------------------------------------------------+
-|                      CẤU TRÚC FRAME ETHERNET CHUẨN 802.1Q                     |
-+-------------------------------------------------------------------------------+
-| Preamble | Dest MAC | Source MAC |  802.1Q TAG (4 Bytes)  | EtherType | Data | FCS |
-+-------------------------------------------------------------------------------+
-                                   |
-              +--------------------+--------------------+
-              | TPID (2B) = 0x8100 | PCP (3b) | DEI (1b)| VID (12 bits) |
-              +--------------------+--------------------+---------------+
++-----------------------------------------------------------------------------------------------+
+|                    SO SÁNH CÁC MÔ HÌNH MẠNG THEO PHẠM VI ĐỊA LÝ                               |
++-------------------+-------------------------------+-------------------+-----------------------+
+| Tiêu Chí          | LAN (Local Area Network)      | MAN (Metropolitan)| WAN (Wide Area Network|
++-------------------+-------------------------------+-------------------+-----------------------+
+| Phạm vi địa lý    | Phòng, tòa nhà, Campus (<2km) | Thành phố (10-50km)| Quốc gia, toàn cầu    |
+| Băng thông        | Rất lớn (1 Gbps - 100 Gbps)   | Cao (100Mbps - 10G)| Thuê bao ISP (10M-10G)|
+| Độ trễ (Latency)  | Cực thấp (< 1 ms)             | Thấp (5 - 20 ms)  | Cao (20 - 150 ms)     |
+| Tỷ lệ lỗi bit BER | Rất thấp (10^-9)              | Thấp              | Cao hơn (10^-6)       |
+| Quyền sở hữu      | Doanh nghiệp tự sở hữu thiết bị| Thuê của Telco    | Thuê đường truyền ISP |
++-------------------+-------------------------------+-------------------+-----------------------+
 ```
-
-- **TPID (Tag Protocol Identifier)**: Giá trị cố định `0x8100` xác định đây là frame gắn thẻ 802.1Q.
-- **PCP (Priority Code Point)**: 3 bit quy định mức độ ưu tiên QoS (0-7) cho gói tin thoại (VoIP) hoặc video.
-- **VID (VLAN Identifier)**: 12 bit xác định mã định danh VLAN (từ `1` đến `4094`).
-- **Access Port**: Cổng kết nối máy trạm/máy chủ; frame đi ra cổng này sẽ bị bóc thẻ (Untagged).
-- **Trunk Port**: Cổng truyền tải lưu lượng của nhiều VLAN cùng lúc; frame bắt buộc phải gắn thẻ (Tagged).
-- **Native VLAN**: VLAN duy nhất truyền qua đường Trunk mà **không gắn thẻ** (mặc định là VLAN 1; khuyến nghị chuyển sang VLAN khác như 999 để chống tấn công VLAN Hopping).
 
 ---
 
-## 3. THIẾT KẾ PHÂN ĐOẠN MẠNG GIÁM SÁT (MANAGEMENT & MONITORING SEGMENTATION)
+### 1.2. Tại Sao Bắt Buộc Phải Phân Đoạn Mạng (Network Segmentation)?
+1. **Thu hẹp miền phát tán bão Broadcast (Broadcast Domain)**: Tránh tình trạng bão broadcast làm tê liệt toàn bộ mạng doanh nghiệp.
+2. **Ngăn chặn chuyển động ngang của Hacker (Lateral Movement)**: Nếu một máy trạm trong vùng User bị nhiễm mã độc tống tiền (Ransomware), hacker không thể tự do quét cổng và lây lan trực tiếp sang máy chủ Cơ sở dữ liệu hoặc máy chủ SIEM.
+3. **Áp dụng chính sách kiểm soát tối thiểu (Least Privilege)**: Chỉ mở đúng các cổng giao tiếp dịch vụ cần thiết giữa các phân vùng (VD: Máy trạm chỉ được gửi Syslog UDP 514 vào máy chủ Log, cấm mọi truy cập SSH/RDP trái phép).
 
-> [!IMPORTANT]
-> **YÊU CẦU CỐT LÕI CỦA ĐỀ TÀI**: Xây dựng vùng mạng **Management (VLAN 99)** và **Monitoring / SIEM (VLAN 999)** độc lập hoàn toàn với VLAN người dùng thông thường.
+---
+
+## BÀI 2: CÔNG NGHỆ MẠNG LAN ẢO (VLAN) & CHUẨN IEEE 802.1Q
+
+### 2.1. Cấu Trúc Khung Dữ Liệu Gắn Thẻ Chuẩn 802.1Q
+Khi một frame đi qua đường kết nối Trunk giữa hai thiết bị chuyển mạch, switch chèn thêm **4 Bytes (32 bits)** thẻ 802.1Q Tag vào giữa trường *Source MAC* và *EtherType*:
+
+```
++-----------------------------------------------------------------------------------------------+
+|                      CẤU TRÚC FRAME ETHERNET CHUẨN 802.1Q (4 BYTES TAG)                       |
++--------------------+---------------------+---------------------+------------------------------+
+| Dest MAC (6 Bytes) | Source MAC (6 Bytes)|  802.1Q Tag (4 B)   | EtherType (2 B) | Data | FCS |
++--------------------+---------------------+---------------------+------------------------------+
+                                              |
+     +----------------------------------------+---------------------------------------+
+     | TPID (16 bits) = 0x8100  | PCP (3 bits) | DEI (1 bit) |     VID (12 bits)      |
+     +--------------------------+--------------+-------------+------------------------+
+```
+
+- **TPID (Tag Protocol Identifier - 16 bits)**: Luôn mang giá trị cố định `0x8100` để báo hiệu cho phần cứng biết frame này đã được gắn thẻ 802.1Q.
+- **PCP (Priority Code Point - 3 bits)**: Đánh dấu 8 mức độ ưu tiên chất lượng dịch vụ QoS (0 đến 7) cho các luồng thoại VoIP hoặc video.
+- **DEI (Drop Eligible Indicator - 1 bit)**: Cho biết gói tin có thể bị hủy bỏ khi xảy ra nghẽn mạng.
+- **VID (VLAN Identifier - 12 bits)**: Định danh VLAN, hỗ trợ tối đa $2^{12} = 4096$ VLANs:
+  - `0` và `4095`: Dành riêng cho hệ thống.
+  - `1`: VLAN mặc định (Default VLAN).
+  - `2` - `1001`: Dải VLAN tiêu chuẩn (Normal Range).
+  - `1006` - `4094`: Dải VLAN mở rộng (Extended Range).
+
+---
+
+### 2.2. Phân Loại Cổng Switch & Khái Niệm Native VLAN
+- **Access Port**: Cổng dành riêng cho một VLAN duy nhất, nối trực tiếp máy tính người dùng hoặc máy chủ. Khi frame rời khỏi Access Port, Switch **gỡ bỏ hoàn toàn thẻ 802.1Q (Untagged)**.
+- **Trunk Port**: Cổng truyền tải đồng thời lưu lượng của nhiều VLAN, nối giữa Switch $\leftrightarrow$ Switch hoặc Switch $\leftrightarrow$ Router. Mọi frame đi qua Trunk Port đều phải **gắn thẻ 802.1Q (Tagged)**.
+- **Native VLAN**: Là một VLAN duy nhất trên đường Trunk mà các frame thuộc về nó **không bị gắn thẻ (Untagged)**. 
+  - *Mặc định*: Cisco đặt Native VLAN là VLAN 1.
+  - *Rủi ro an ninh*: Hacker có thể lợi dụng Native VLAN để tấn công **VLAN Hopping (Double Tagging)** nhảy từ VLAN người dùng sang VLAN nhạy cảm.
+  - *Khuyến nghị Hardening*: Đổi Native VLAN sang một VLAN không sử dụng (VD: VLAN 999) trên toàn bộ các cổng Trunk.
+
+---
+
+## BÀI 3: THIẾT KẾ PHÂN ĐOẠN MẠNG GIÁM SÁT AN NINH TOÀN DIỆN
 
 ```mermaid
-flowchart TB
-    subgraph WAN_ZONE ["VÙNG INTERNET / NGOẠI BIÊN"]
-        Internet["Internet Gateway"]
+flowchart TD
+    subgraph PERIMETER ["VÙNG NGOẠI BIÊN & INTERNET"]
+        INET["Internet Gateway"]
     end
 
-    subgraph FW_CORE ["NEXT-GEN FIREWALL / ROUTER"]
-        FW["Enterprise Firewall (FortiGate / pfSense / ASA)"]
+    subgraph SECURITY_CORE ["LÕI AN NINH & ĐỊNH TUYẾN"]
+        FW["Next-Gen Firewall / Core Router\n- Thực thi Access Control List (ACL)\n- Định tuyến Inter-VLAN"]
     end
 
-    subgraph PROD_ZONES ["VÙNG NGƯỜI DÙNG & DỊCH VỤ CÔNG KHAI"]
-        VLAN10["VLAN 10: Khối Văn phòng\n(192.168.10.0/24)"]
-        VLAN20["VLAN 20: Khối Kỹ thuật\n(192.168.20.0/24)"]
-        VLAN50["VLAN 50: Vùng DMZ Server\n(192.168.50.0/27)"]
-        VLAN60["VLAN 60: Vùng Server Nội bộ\n(192.168.60.0/26)"]
+    subgraph BUSINESS_ZONES ["PHÂN ĐOẠN NGƯỜI DÙNG & MÁY CHỦ SẢN XUẤT"]
+        V10["VLAN 10: Khối Kế toán / Nhân sự\nSubnet: 192.168.10.0/24"]
+        V20["VLAN 20: Khối Kỹ thuật / Lập trình\nSubnet: 192.168.20.0/24"]
+        V50["VLAN 50: Vùng DMZ (Web/Mail Public)\nSubnet: 192.168.50.0/27"]
+        V60["VLAN 60: Máy chủ Nội bộ (AD/Database)\nSubnet: 192.168.60.0/26"]
     end
 
-    subgraph SECURE_ZONE ["VÙNG CÔ LẬP GIÁM SÁT & QUẢN TRỊ (ISOLATED)"]
-        VLAN99["VLAN 99: Management OOB\n(192.168.99.0/28)\n- SSH/Console Gateway"]
-        VLAN999["VLAN 999: SOC / SIEM / Monitoring\n(192.168.100.0/28)\n- Wazuh / ELK Server (.10)\n- Syslog Server (.11)\n- NTP / SNMP Manager (.1)"]
+    subgraph ISOLATED_MGMT ["PHÂN ĐOẠN QUẢN TRỊ & GIÁM SÁT ĐỘC LẬP (CÔ LẬP)"]
+        V99["VLAN 99: Management OOB\nSubnet: 192.168.99.0/28\n- Cổng SSH/HTTPS quản trị thiết bị"]
+        V100["VLAN 100: Monitoring & SOC SIEM\nSubnet: 192.168.100.0/28\n- Wazuh Manager (.10)\n- Syslog Server (.11)\n- Central NTP Server (.1)"]
     end
 
-    Internet <--> FW
-    FW <--> VLAN50
-    FW <--> VLAN60
-    FW <--> VLAN10
-    FW <--> VLAN20
+    INET <--> FW
+    FW <--> V50
+    FW <--> V60
+    FW <--> V10
+    FW <--> V20
     
-    FW == "Chỉ cho phép Syslog (514), SNMP (161/162), Wazuh Agent (1514/1515)" ==> VLAN999
-    FW == "Chỉ Admin IP được SSH (22) / HTTPS (443)" ==> VLAN99
+    FW == "Chỉ cho phép luồng Telemetry Syslog/SNMP/Wazuh" ==> V100
+    FW == "Chỉ cho phép IP máy trạm Security Admin truy cập SSH" ==> V99
 ```
-
-### 3.1. Bảng Chi Tiết Phân Đoạn Các Phân Vùng Mạng
-
-| Phân Vùng | VLAN ID | Dải Mạng IP | Thiết Bị Trong Phân Vùng | Quyền Hạn & Chính Sách An Ninh |
-| :--- | :--- | :--- | :--- | :--- |
-| **User LAN (Khối 1)** | `10` | `192.168.10.0/24` | Máy tính nhân viên hành chính, kế toán | Bị cấm truy cập trực tiếp vào VLAN 99 và VLAN 999; chỉ ra Internet và truy cập dịch vụ nội bộ được cấp phép |
-| **User LAN (Khối 2)** | `20` | `192.168.20.0/24` | Máy trạm lập trình viên, kỹ thuật viên | Không thể can thiệp vào máy chủ SIEM; bị kiểm soát bởi IPS |
-| **DMZ Server** | `50` | `192.168.50.0/27` | Web Server Nginx, Mail Server, Public DNS | Công khai với Internet; nếu DMZ bị chiếm quyền điều khiển (Compromised), kẻ tấn công **không thể** pivot sang VLAN User hoặc VLAN Monitoring |
-| **Internal Server** | `60` | `192.168.60.0/26` | Domain Controller (AD), Database Server | Chỉ chấp nhận kết nối từ các ứng dụng được ủy quyền trong DMZ/LAN |
-| **Management (OOB)** | **`99`** | `192.168.99.0/28` | Giao diện quản trị Web GUI / SSH của Router, Switch, Firewall, iDRAC/iLO | **Cô lập hoàn toàn**; chỉ IP của máy trạm quản trị viên an ninh (Security Admin) mới được cấp quyền SSH/HTTPS |
-| **Monitoring & SIEM**| **`999`**| `192.168.100.0/28`| **Wazuh Manager, ELK Stack, Syslog Collector, SNMP Manager, NTP Server** | **Chỉ tiếp nhận traffic telemetry một chiều**: Syslog (UDP 514/TLS 6514), SNMP Traps (UDP 162), Wazuh Agent logs (TCP 1514/1515). Nghiêm cấm mọi truy cập tùy tiện từ các dải IP khác |
 
 ---
 
-## 4. ĐỊNH TUYẾN LIÊN VLAN (INTER-VLAN ROUTING) & ACL BẢO VỆ
+### 3.1. Bảng Ma Trận Phân Quyền Truy Cập Giữa Các Vùng (Access Matrix)
 
-### 4.1. Cấu Hình Inter-VLAN Routing (Router-on-a-Stick) Trên Cisco Router
+| Nguồn \ Đích | Internet | VLAN 10/20 (User) | VLAN 50 (DMZ) | VLAN 60 (Server) | VLAN 99 (Mgmt) | VLAN 100 (Monitoring) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Internet** | - | ❌ DENY | ✅ Chỉ Web/Mail (443/25) | ❌ DENY | ❌ DENY | ❌ DENY |
+| **VLAN 10/20 (User)** | ✅ PERMIT | ❌ Cấm chéo giữa các VLAN | ✅ HTTP/HTTPS | ✅ Chỉ dịch vụ được cấp | ❌ DENY | ⚠️ Chỉ gửi Telemetry (Syslog/SNMP) |
+| **VLAN 50 (DMZ)** | ✅ PERMIT | ❌ DENY | ❌ DENY | ⚠️ Chỉ truy vấn DB Port 3306 | ❌ DENY | ⚠️ Chỉ gửi Syslog/Agent (1514) |
+| **VLAN 99 (Mgmt Admin)** | ✅ PERMIT | ✅ SSH / RDP cứu hộ | ✅ SSH Quản trị | ✅ SSH / RDP Quản trị | ✅ FULL | ✅ HTTPS Web UI (Kibana/Wazuh) |
+| **VLAN 100 (SIEM)** | ❌ DENY | ❌ DENY | ❌ DENY | ❌ DENY | ❌ DENY | - (Vùng tiếp nhận dữ liệu 1 chiều) |
+
+---
+
+## BÀI 4: CẤU HÌNH ĐỊNH TUYẾN LIÊN VLAN & CHÍNH SÁCH ACL BẢO VỆ
+
+### 4.1. Cấu Hình Switch Cisco Catalyst (VLAN, Trunking, Port Hardening)
 ```cisco
-! Interface Trunk kết nối xuống Core Switch
-interface GigabitEthernet0/0/0
- no shutdown
-!
-! Sub-interface cho VLAN 10 (User)
-interface GigabitEthernet0/0/0.10
- encapsulation dot1Q 10
- ip address 192.168.10.1 255.255.255.0
-!
-! Sub-interface cho VLAN 50 (DMZ)
-interface GigabitEthernet0/0/0.50
- encapsulation dot1Q 50
- ip address 192.168.50.1 255.255.255.224
-!
-! Sub-interface cho VLAN 999 (Monitoring & SIEM)
-interface GigabitEthernet0/0/0.999
- encapsulation dot1Q 999
- ip address 192.168.100.1 255.255.255.240
-! Áp dụng Access Control List chặn người dùng truy cập trái phép vào SIEM
- ip access-group ACL_PROTECT_MONITORING out
+! ==============================================================
+! 1. KHỞI TẠO CÁC VLAN TRÊN CORE SWITCH
+! ==============================================================
+Switch# configure terminal
+Switch(config)# vlan 10
+Switch(config-vlan)# name USER_ZONE_1
+Switch(config-vlan)# exit
+
+Switch(config)# vlan 20
+Switch(config-vlan)# name USER_ZONE_2
+Switch(config-vlan)# exit
+
+Switch(config)# vlan 50
+Switch(config-vlan)# name DMZ_SERVERS
+Switch(config-vlan)# exit
+
+Switch(config)# vlan 60
+Switch(config-vlan)# name INTERNAL_SERVERS
+Switch(config-vlan)# exit
+
+Switch(config)# vlan 99
+Switch(config-vlan)# name MANAGEMENT_OOB
+Switch(config-vlan)# exit
+
+Switch(config)# vlan 100
+Switch(config-vlan)# name SOC_MONITORING_SIEM
+Switch(config-vlan)# exit
+
+! Tạo VLAN cách ly cho Native VLAN chống VLAN Hopping
+Switch(config)# vlan 999
+Switch(config-vlan)# name UNUSED_NATIVE_VLAN
+Switch(config-vlan)# exit
+
+! ==============================================================
+! 2. CẤU HÌNH CỔNG TRUNK KẾT NỐI LÊN ROUTER / FIREWALL
+! ==============================================================
+Switch(config)# interface GigabitEthernet0/1
+ Switch(config-if)# description UPLINK_TO_ROUTER_EDGE
+ Switch(config-if)# switchport trunk encapsulation dot1q
+ Switch(config-if)# switchport mode trunk
+ Switch(config-if)# switchport trunk native vlan 999
+ Switch(config-if)# switchport trunk allowed vlan 10,20,50,60,99,100
+ Switch(config-if)# no shutdown
+ Switch(config-if)# exit
 ```
 
-### 4.2. Cấu Hình Extended ACL Bảo Vệ VLAN Monitoring & SIEM
+---
+
+### 4.2. Cấu Hình Inter-VLAN Routing & Extended ACL Trên Router Cisco
 ```cisco
 ! ==============================================================
-! BỘ LẬP CHÍNH SÁCH BẢO VỆ VLAN MONITORING (VLAN 999)
+! 1. CẤU HÌNH SUB-INTERFACES TRÊN ROUTER (ROUTER-ON-A-STICK)
 ! ==============================================================
-ip access-list extended ACL_PROTECT_MONITORING
- ! 1. Cho phép gửi Log Syslog từ tất cả các VLAN về máy chủ Syslog (192.168.100.11)
+Router(config)# interface GigabitEthernet0/0/0
+ Router(config-if)# no ip address
+ Router(config-if)# no shutdown
+ Router(config-if)# exit
+
+! Sub-interface cho VLAN 10 (User)
+Router(config)# interface GigabitEthernet0/0/0.10
+ Router(config-subif)# encapsulation dot1Q 10
+ Router(config-subif)# ip address 192.168.10.1 255.255.255.0
+ Router(config-subif)# exit
+
+! Sub-interface cho VLAN 99 (Management OOB)
+Router(config)# interface GigabitEthernet0/0/0.99
+ Router(config-subif)# encapsulation dot1Q 99
+ Router(config-subif)# ip address 192.168.99.1 255.255.255.240
+ Router(config-subif)# exit
+
+! Sub-interface cho VLAN 100 (Monitoring & SIEM)
+Router(config)# interface GigabitEthernet0/0/0.100
+ Router(config-subif)# encapsulation dot1Q 100
+ Router(config-subif)# ip address 192.168.100.1 255.255.255.240
+ ! Áp dụng Extended ACL bảo vệ vùng giám sát tại chiều ra (Outbound)
+ Router(config-subif)# ip access-group ACL_GUARD_MONITORING out
+ Router(config-subif)# exit
+
+! ==============================================================
+! 2. BỘ LUẬT EXTENDED ACL BẢO VỆ VÙNG GIÁM SÁT (VLAN 100)
+! ==============================================================
+Router(config)# ip access-list extended ACL_GUARD_MONITORING
+ ! 1. Cho phép gửi Syslog từ tất cả các VLAN về máy chủ Syslog (.11)
  permit udp any host 192.168.100.11 eq 514
  permit tcp any host 192.168.100.11 eq 6514
  
- ! 2. Cho phép gửi SNMP Traps từ thiết bị về SIEM Manager (192.168.100.10)
+ ! 2. Cho phép gửi SNMP Traps từ thiết bị về SIEM Manager (.10)
  permit udp any host 192.168.100.10 eq 162
  
- ! 3. Cho phép Agent Wazuh gửi telemetry về Wazuh Manager (TCP 1514, 1515)
+ ! 3. Cho phép Wazuh Agent trên máy chủ/máy trạm đẩy log về Wazuh Server (.10)
  permit tcp any host 192.168.100.10 eq 1514
  permit tcp any host 192.168.100.10 eq 1515
 
- ! 4. Cho phép máy trạm Admin (192.168.99.10) truy cập Dashboard Kibana / Wazuh Web UI (HTTPS 443 / 5601)
+ ! 4. Cho phép các thiết bị đồng bộ thời gian từ Central NTP Server (.1)
+ permit udp any host 192.168.100.1 eq 123
+
+ ! 5. Chỉ cho phép duy nhất IP trạm quản trị Admin (.99.10) truy cập Dashboard Web UI & SSH
  permit tcp host 192.168.99.10 host 192.168.100.10 eq 443
  permit tcp host 192.168.99.10 host 192.168.100.10 eq 5601
  permit tcp host 192.168.99.10 host 192.168.100.10 eq 22
 
- ! 5. Cho phép phản hồi phiên TCP đã thiết lập (Established)
+ ! 6. Cho phép các gói phản hồi của các phiên TCP hợp lệ đã thiết lập trước đó
  permit tcp any 192.168.100.0 0.0.0.15 established
- 
- ! 6. Chặn toàn bộ mọi kết nối khác từ mạng nội bộ vào VLAN Giám sát (Zero-Trust Principle)
+
+ ! 7. CHẶN VÀ GHI LOG TOÀN BỘ CÁC TRUY CẬP TRÁI PHÉP KHÁC VÀO VLAN MONITORING
  deny ip any 192.168.100.0 0.0.0.15 log
  permit ip any any
 ```
+
+---
+
+## BÀI 5: BỘ CÂU HỎI ÔN TẬP & PHẢN BIỆN HỘI ĐỒNG (VIVA Q&A)
+
+### Câu 1: Tại sao phải tách riêng VLAN Management (VLAN 99) và VLAN Monitoring & SIEM (VLAN 100) mà không gộp chung?
+- **Trả lời**:
+  - `VLAN 99 (Management)` chứa các giao diện điều khiển cấu hình phần cứng có mức độ rủi ro tối cao (SSH CLI, HTTPS Web GUI của Router/Firewall, cổng iDRAC/iLO). Vùng này chỉ trao đổi lưu lượng quản trị hai chiều giữa Security Admin và thiết bị.
+  - `VLAN 100 (Monitoring & SIEM)` là vùng lưu trữ chứng cứ số và tiếp nhận khối lượng dữ liệu khổng lồ (Big Data) từ hàng nghìn luồng Syslog/SNMP của toàn mạng. Nếu gộp chung, nguy cơ tắc nghẽn đường truyền quản trị có thể xảy ra khi có sự cố, đồng thời kẻ tấn công nếu xâm nhập được vào máy chủ Syslog sẽ dễ dàng thực hiện tấn công leo thang đặc quyền để kiểm soát toàn bộ hạ tầng mạng.
+
+### Câu 2: Tấn công VLAN Hopping dạng Double Tagging hoạt động thế nào và biện pháp ngăn chặn triệt để?
+- **Trả lời**:
+  - **Cơ chế**: Hacker gửi frame gắn 2 thẻ 802.1Q tag (Thẻ ngoài là Native VLAN 1, Thẻ trong là VLAN mục tiêu 100). Khi Switch 1 nhận frame, nó bóc thẻ ngoài Native VLAN và đẩy frame sang Switch 2 qua đường Trunk mà không gắn thẻ mới. Khi Switch 2 nhận frame, nó thấy thẻ trong còn nguyên là VLAN 100 nên chuyển tiếp thẳng gói tin vào VLAN 100.
+  - **Biện pháp ngăn chặn**:
+    1. Không gán bất kỳ máy trạm người dùng nào vào Native VLAN.
+    2. Đổi Native VLAN mặc định từ VLAN 1 sang một VLAN rỗng không sử dụng (VD: `switchport trunk native vlan 999`).
+    3. Bật tính năng gắn thẻ bắt buộc cho Native VLAN trên toàn switch (`vlan dot1q tag native`).

@@ -1,77 +1,178 @@
-# CHUYÊN ĐỀ 6: NETWORK SECURITY (AN TOÀN MẠNG & CÁC KỊCH BẢN TẤN CÔNG)
+# GIÁO TRÌNH CHUYÊN ĐỀ 6: NETWORK SECURITY (AN TOÀN MẠNG & CÁC KỊCH BẢN TẤN CÔNG)
 
-> **Mục tiêu**: Nắm vững các công nghệ phòng thủ hạ tầng mạng gồm **Firewall & ACLs**, **VPN (IPsec / SSL-VPN)**, **Hệ thống IDS/IPS (Suricata/Snort)** và nhận diện chính xác các dấu hiệu của **các dạng tấn công mạng phổ biến** thông qua bản ghi nhật ký (Syslog / SIEM Alerts).
+> **Mục tiêu học tập**:
+> 1. Hiểu sâu sắc cơ chế hoạt động của các công nghệ phòng thủ hạ tầng mạng: **Firewall & ACLs**, **VPN (IPsec / SSL-VPN)**, và hệ thống **IDS/IPS (Suricata / Snort)**.
+> 2. Phân biệt rõ sự khác nhau giữa hai chế độ hoạt động của cảm biến an ninh: **Passive (SPAN Mirroring IDS)** và **Active (Inline IPS)**.
+> 3. Nắm vững kỹ thuật và dấu hiệu nhận diện trong bản ghi nhật ký (**Log Signatures**) của 6 dạng tấn công mạng kinh điển: **Brute-Force**, **MAC Flooding**, **ARP Poisoning**, **DoS/DDoS**, **Port Scanning**, và **Unauthorized Configuration**.
+> 4. Làm chủ bộ câu hỏi phản biện chuyên sâu phục vụ bảo vệ đồ án trước Hội đồng chấm thi.
 
 ---
 
-## 1. TƯỜNG LỬA (FIREWALL) & DANH SÁCH KIỂM SOÁT TRUY CẬP (ACL)
+## BÀI 1: TƯỜNG LỬA (FIREWALL) & ACCESS CONTROL LISTS (ACL)
 
-### 1.1. So Sánh Standard ACL vs Extended ACL
-- **Standard ACL (1-99, 1300-1999)**: Chỉ kiểm tra **địa chỉ IP nguồn** (Source IP). Thường được đặt ở vị trí gần đích nhất có thể.
-- **Extended ACL (100-199, 2000-2699)**: Kiểm tra đa chiều: **Source IP**, **Destination IP**, **Giao thức (TCP/UDP/ICMP)**, **Cổng dịch vụ (Port)** và cờ TCP (`established`). Thường được đặt ở vị trí gần nguồn nhất có thể.
-
-### 1.2. Chính Sách An Ninh Dựa Trên Vùng (Zone-Based Security Policy trên NGFW)
-Tường lửa hiện đại hoạt động dựa trên cấu trúc các **Vùng An Ninh (Security Zones)**:
+### 1.1. So Sánh Chi Tiết Standard ACL vs Extended ACL
 
 ```
-+---------------------------------------------------------------------------------------+
-|                       ZONE-BASED POLICY RULE STRUCTURE (NGFW)                         |
-+---------------------------------------------------------------------------------------+
-| [From-Zone]  | [To-Zone]  | [Source]       | [Destination]  | [Application/Port] | [Action] |
-+--------------+------------+----------------+----------------+--------------------+----------+
-| Trust (LAN)  | Untrust    | Any (User IPs) | Any            | HTTP, HTTPS, DNS   | ACCEPT   |
-| Untrust      | DMZ        | Any            | Web-Server-IP  | HTTPS (443)        | ACCEPT   |
-| Trust (LAN)  | Monitoring | Admin-Workstat | SIEM-Server-IP | HTTPS, SSH         | ACCEPT   |
-| Trust (LAN)  | Monitoring | Any            | Any            | ANY                | DROP+LOG |
-+---------------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------------+
+|                      SO SÁNH BỘ LỌC ACCESS CONTROL LIST (ACL) TRÊN CISCO                      |
++-------------------+-----------------------------------+---------------------------------------+
+| Tiêu Chí          | Standard ACL (1-99, 1300-1999)    | Extended ACL (100-199, 2000-2699)     |
++-------------------+-----------------------------------+---------------------------------------+
+| Phạm vi kiểm tra  | **Chỉ kiểm tra IP Nguồn**         | **Source IP, Dest IP, Protocol, Port**|
+| Kiểm soát Layer 4 | Không (Không phân biệt TCP/UDP)   | Có (Kiểm tra Port 80, 443, 22, 514...) |
+| Kiểm soát cờ TCP  | Không                             | Có (`established` - kiểm tra cờ ACK)  |
+| Vị trí đặt tối ưu | **Đặt gần ĐÍCH nhất có thể**      | **Đặt gần NGUỒN nhất có thể**         |
+| Tiêu hao tài nguyên| Rất thấp                          | Trung bình (Được tăng tốc bởi TCAM)   |
++-------------------+-----------------------------------+---------------------------------------+
 ```
 
 ---
 
-## 2. MẠNG RIÊNG ẢO (VPN - VIRTUAL PRIVATE NETWORK)
-
-### 2.1. IPsec Site-to-Site VPN
-- Dùng để thiết lập đường hầm mã hóa an toàn giữa 2 mạng chi nhánh văn phòng qua Internet.
-- **IKE Phase 1**: Đàm phán bảo mật kênh điều khiển (Xác thực Pre-Shared Key/RSA, Thuật toán mã hóa AES-256, Băm SHA-256, Nhóm Diffie-Hellman Group 14+).
-- **IKE Phase 2**: Đàm phán đường hầm truyền dữ liệu IPsec SA (Giao thức **ESP - Encapsulating Security Payload** đảm bảo tính bí mật và toàn vẹn, mã hóa toàn bộ IP payload).
-
-### 2.2. SSL-VPN (Remote Access VPN)
-- Cung cấp quyền truy cập từ xa an toàn cho các kỹ sư SOC và quản trị viên hệ thống để giám sát hạ tầng mạng ngoài giờ làm việc.
-- Sử dụng giao thức TLS/SSL qua cổng HTTPS 443 tiêu chuẩn, dễ dàng vượt qua các tường lửa trung gian của nhà mạng.
-
----
-
-## 3. HỆ THỐNG PHÁT HIỆN & NGĂN CHẶN XÂM NHẬP (IDS / IPS)
+### 1.2. Chính Sách An Ninh Dựa Trên Vùng (Zone-Based Security Policy)
+Trong các dòng Next-Gen Firewall (như FortiGate, Palo Alto, Cisco Firepower), chính sách không gán vào từng cổng vật lý đơn lẻ mà gán vào các **Vùng An Ninh (Security Zones)**:
 
 ```mermaid
 flowchart LR
-    subgraph IDS_MODE ["IDS (PASSIVE / OUT-OF-BAND)"]
-        SW1["Switch"] -- "SPAN Mirroring (Bản sao gói tin)" --> IDS["IDS Sensor (Suricata)\n- Chỉ phát hiện & ghi Log cảnh báo\n- Không cản trở luồng mạng"]
-        IDS --> SIEM1["SIEM Server"]
+    subgraph UNTRUST_ZONE ["VÙNG KHÔNG TIN CẬY (UNTRUST)"]
+        WAN["Internet / ISP Uplink"]
     end
 
-    subgraph IPS_MODE ["IPS (ACTIVE / INLINE)"]
-        SW2["Router/FW"] <== "Luồng mạng đi xuyên qua thiết bị (Inline)" ==> IPS["IPS Engine\n- Quét chữ ký Deep Packet Inspection\n- Tự động DROP gói độc hại Realtime"]
-        IPS --> SIEM2["SIEM Server"]
+    subgraph DMZ_ZONE ["VÙNG MÁY CHỦ CÔNG KHAI (DMZ)"]
+        DMZ["Web / Mail Server (192.168.50.0/27)"]
     end
+
+    subgraph TRUST_ZONE ["VÙNG NỘI BỘ (TRUST)"]
+        LAN["User LAN (192.168.10.0/24)"]
+    end
+
+    subgraph SOC_ZONE ["VÙNG GIÁM SÁT AN NINH (MONITORING)"]
+        SOC["SIEM / Wazuh (192.168.100.0/28)"]
+    end
+
+    WAN -- "Policy 1: Chỉ cho phép HTTPS/443 + Quét IPS" --> DMZ
+    LAN -- "Policy 2: Cho phép NAT ra Internet (HTTP/HTTPS/DNS)" --> WAN
+    LAN -- "Policy 3: Chỉ cho phép gửi Syslog/SNMP (514/162)" --> SOC
+    DMZ -. "Policy 4: DENY ALL sang LAN & SOC (Cách ly tuyệt đối)" .-> LAN
 ```
-
-| Tiêu chí so sánh | Hệ thống IDS (Intrusion Detection) | Hệ thống IPS (Intrusion Prevention) |
-| :--- | :--- | :--- |
-| **Vị trí triển khai** | Nằm ngoài đường truyền (Out-of-band / SPAN Mirror Port) | Đặt trực tiếp trên đường truyền (Inline) |
-| **Hành động phản ứng** | Gửi cảnh báo (Alert), xuất bản ghi Log về SIEM | Cảnh báo + Tự động Drop gói tin độc hại ngay lập tức |
-| **Ảnh hưởng hệ thống** | Không làm tăng độ trễ (Latency) của mạng nếu IDS quá tải | Có thể làm chậm mạng hoặc gây ngắt quãng nếu cấu hình sai chữ ký (False Positive Drop) |
-| **Vai trò với SIEM** | Cung cấp nguồn log phân tích hành vi tấn công | Cung cấp log ngăn chặn thành công và nguồn IP tấn công |
 
 ---
 
-## 4. CÁC DẠNG TẤN CÔNG PHỔ BIẾN & DẤU HIỆU NHẬN DIỆN TRÊN SIEM
+## BÀI 2: MẠNG RIÊNG ẢO (VPN - VIRTUAL PRIVATE NETWORK)
 
-| Dạng Tấn Công | Kỹ Thuật & Công Cụ Thường Dùng | Dấu Hiệu Nhận Diện Cốt Lõi Trên Log / SIEM | Giải Pháp Ngăn Chặn |
+### 2.1. IPsec Site-to-Site VPN (Kết Nối Liên Chi Nhánh)
+IPsec hoạt động tại Tầng 3 (Network Layer) thông qua hai giai đoạn đàm phán bảo mật:
+
+1. **IKE Phase 1 (Internet Key Exchange - ISAKMP Tunnel)**:
+   - Mục đích: Thiết lập kênh truyền điều khiển bảo mật hai chiều giữa 2 Gateway.
+   - Các tham số đàm phán (**HAGLE**):
+     - **H**ash: SHA-256 / SHA-512.
+     - **A**uthentication: Pre-Shared Key (PSK) hoặc Digital Certificate (RSA).
+     - **G**roup (Diffie-Hellman): DH Group 14 (2048-bit) hoặc DH Group 19/20 (Elliptic Curve).
+     - **L**ifetime: 86400 giây (24 giờ).
+     - **E**ncryption: AES-256 hoặc AES-GCM.
+2. **IKE Phase 2 (IPsec SA - Data Tunnel)**:
+   - Sử dụng giao thức **ESP (Encapsulating Security Payload - Protocol 50)** để mã hóa toàn bộ gói tin IP người dùng và xác thực tính toàn vẹn (HMAC-SHA).
+
+---
+
+### 2.2. SSL-VPN (Remote Access VPN Cho Đội Ngũ SOC & Quản Trị)
+- Cung cấp kết nối từ xa bảo mật cho quản trị viên an ninh truy cập vào VLAN Management 99 / VLAN Monitoring 100 ngoài giờ làm việc.
+- Hai chế độ triển khai:
+  - **Web Mode (Clientless)**: Truy cập giao diện quản trị qua trình duyệt Web HTTPS.
+  - **Tunnel Mode (Client-based)**: Cài đặt phần mềm VPN Client (FortiClient, OpenVPN) tạo card mạng ảo (Virtual NIC) truy cập toàn diện mạng nội bộ.
+
+---
+
+## BÀI 3: HỆ THỐNG PHÁT HIỆN & NGĂN CHẶN XÂM NHẬP (IDS / IPS)
+
+```
++-----------------------------------------------------------------------------------------------+
+|                         SO SÁNH TOÀN DIỆN HỆ THỐNG IDS VÀ IPS                                 |
++-------------------+-----------------------------------+---------------------------------------+
+| Tiêu Chí          | IDS (Intrusion Detection System)  | IPS (Intrusion Prevention System)     |
++-------------------+-----------------------------------+---------------------------------------+
+| Vị trí triển khai | **Ngoại tuyến (Out-of-band / SPAN)**| **Trực tiếp trên đường truyền (Inline)**|
+| Cơ chế bắt gói    | Switch nhân bản 1 bản sao gói tin | Gói tin thật đi xuyên qua phần cứng   |
+| Tác động trễ mạng | **Hoàn toàn 0% ảnh hưởng mạng**   | Thêm độ trễ xử lý (1-5 ms)            |
+| Khả năng can thiệp| Chỉ gửi cảnh báo (Alert) về SIEM  | **Tự động hủy gói tin độc hại (Drop)**|
+| Rủi ro hệ thống   | Kẻ tấn công có thể kịp khai thác  | Rủi ro chặn nhầm dịch vụ thật (FP Drop)|
+| Phần mềm mã nguồn | **Suricata, Snort, Zeek**         | **Suricata (Inline mode), Snort DAQ** |
++-------------------+-----------------------------------+---------------------------------------+
+```
+
+---
+
+### 3.1. Cấu Trúc Bản Ghi Cảnh Báo Của IDS Sensor (Suricata EVE JSON)
+Khi phát hiện lưu lượng quét cổng hoặc khai thác lỗ hổng, Suricata đẩy bản ghi định dạng JSON về Logstash/SIEM:
+
+```json
+{
+  "timestamp": "2026-09-16T14:30:15.123456+0700",
+  "flow_id": 1087293847291823,
+  "event_type": "alert",
+  "src_ip": "192.168.10.77",
+  "src_port": 49152,
+  "dest_ip": "192.168.50.10",
+  "dest_port": 80,
+  "proto": "TCP",
+  "alert": {
+    "action": "allowed",
+    "gid": 1,
+    "signature_id": 2010935,
+    "rev": 3,
+    "signature": "ET SCAN Suspicious Nmap User-Agent Detected",
+    "category": "Attempted Information Leak",
+    "severity": 2
+  }
+}
+```
+
+---
+
+## BÀI 4: BẢNG PHÂN TÍCH CHUYÊN SÂU 6 DẠNG TẤN CÔNG MẠNG KINH ĐIỂN
+
+```mermaid
+flowchart TD
+    ATTACKER["Máy Tấn Công (Kali Linux)"]
+    
+    ATTACKER -->|1. Hydra / Medusa| A1["SSH / RDP Brute-Force"]
+    ATTACKER -->|2. Macof| A2["MAC Address Flooding"]
+    ATTACKER -->|3. Ettercap / Arpspoof| A3["ARP Poisoning MITM"]
+    ATTACKER -->|4. hping3 SYN Flood| A4["DoS / DDoS Resource Exhaustion"]
+    ATTACKER -->|5. Nmap SYN Scan| A5["Port Scanning Reconnaissance"]
+    ATTACKER -->|6. Unauthorized CLI| A6["Thay Đổi Cấu Hình Trái Phép"]
+
+    A1 & A2 & A3 & A4 & A5 & A6 ==> LOGS["Nguồn Nhật Ký: Syslog, SNMP, NetFlow, Wazuh Agent"]
+    LOGS ==> SIEM["SIEM Correlation Engine (VLAN 100) -> Alerting Dashboard"]
+```
+
+---
+
+### Bảng Chi Tiết Kỹ Thuật, Dấu Hiệu Nhật Ký & Giải Pháp Phòng Ngự:
+
+| Dạng Tấn Công | Công Cụ & Kỹ Thuật Tấn Công | Dấu Hiệu Nhận Diện Cốt Lõi Trên Log / SIEM | Quy Tắc Tương Quan (SIEM Rule) & Giải Pháp |
 | :--- | :--- | :--- | :--- |
-| **Brute-Force Đăng nhập** | `Hydra`, `Medusa`, `Patator` vét cạn mật khẩu SSH, RDP, Web Login | • Hàng loạt bản tin `%SEC_LOGIN-4-LOGIN_FAILED` hoặc Windows `Event ID 4625` liên tiếp trong thời gian ngắn.<br>• Xuất hiện $\ge 5$ lần thất bại/phút từ cùng 1 IP nguồn. | • Khóa tài khoản sau 5 lần sai (Account Lockout).<br>• Bật xác thực 2 yếu tố (MFA).<br>• Cấu hình Fail2ban tự động block IP. |
-| **ARP Poisoning / Spoofing** | `Ettercap`, `Arpspoof`, `Bettercap` gửi ARP Reply giả mạo để MITM | • Bản tin cảnh báo từ Switch: `%SW_DAI-4-PACKET_DROPPED: Denied ARP packet`.<br>• Cùng 1 IP nhưng ánh xạ thay đổi liên tục giữa 2 địa chỉ MAC khác nhau trong bảng ARP. | • Bật **Dynamic ARP Inspection (DAI)** kết hợp **DHCP Snooping** trên Switch. |
-| **MAC Address Flooding** | `Macof` gửi hàng trăm nghìn frame mang MAC nguồn ngẫu nhiên | • CAM Table của switch tăng vọt lên mức tối đa ($100\%$ dung lượng).<br>• Switch chuyển sang chế độ Hub (Fail-open) khiến lưu lượng bị phát tán toàn mạng. | • Bật **Port Security** (Giới hạn tối đa 1-2 MAC/port, action: `shutdown`). |
-| **DoS / DDoS (SYN Flood, ICMP)** | `hping3`, `LOIC`, `Scapy` gửi bão gói tin SYN không gửi lại ACK | • Traffic băng thông tăng đột biến trên biểu đồ NetFlow.<br>• CPU Router/Firewall vọt lên $90-100\%$.<br>• Bảng State Table / Half-open Connections trên Firewall bị đầy. | • Bật **TCP SYN Flood Protection / SYN Cookies**.<br>• Cấu hình **CoPP** và Rate-limiting ICMP. |
-| **Port Scanning / Reconnaissance** | `Nmap` (SYN Scan `-sS`), `Masscan` quét toàn bộ dải cổng | • Firewall / IDS ghi nhận 1 IP nguồn liên tục gửi gói tin tới hàng loạt cổng khác nhau (`21, 22, 23, 80, 443, 445, 3389...`) trong vài giây. | • IDS/IPS Rule tự động phát hiện Port Scan.<br>• Block IP quét cổng bằng Firewall Dynamic Blacklist. |
-| **Thay Đổi Cấu Hình Trái Phép** | Can thiệp trái phép vào CLI của Router / Switch / Firewall | • Syslog ghi nhận: `%SYS-5-CONFIG_I: Configured from console by admin`.<br>• Diễn ra ngoài giờ làm việc hành chính hoặc từ IP không thuộc VLAN Management 99. | • Bật tính năng AAA Authentication (RADIUS/TACACS+).<br>• Bật Rule tương quan SIEM cảnh báo biến động config. |
+| **1. Brute-Force Đăng Nhập** | `Hydra`, `Medusa`, `Patator` vét cạn từ điển SSH (22), RDP (3389) | • Linux: `Failed password for root from 192.168.10.77 port 49152 ssh2`.<br>• Windows: `Event ID 4625 (Logon Failure)`. | • **Rule SIEM**: $\ge 5$ lần failed login trong 60 giây từ 1 IP $\rightarrow$ Cảnh báo Level 12.<br>• **Phòng vệ**: Bật xác thực MFA, Fail2ban tự động block IP. |
+| **2. MAC Flooding** | `macof` phát sinh hàng trăm nghìn frame mang địa chỉ MAC nguồn ngẫu nhiên | • CAM Table của switch đạt $100\%$ dung lượng trong 2 giây.<br>• Switch phát sinh bản tin `%SW_DAI-4-PACKET_DROPPED` hoặc chuyển chế độ Hub. | • **Rule SIEM**: Bắt biến động dung lượng CAM Table qua SNMP OID.<br>• **Phòng vệ**: Bật **Port Security** (`switchport port-security maximum 2`, `violation shutdown`). |
+| **3. ARP Poisoning (MITM)** | `Ettercap`, `Arpspoof` gửi bản tin Gratuitous ARP Reply giả mạo IP Gateway | • Switch Syslog: `%SW_DAI-4-PACKET_DROPPED: Denied ARP packet on Gi0/5`.<br>• Trạm nạn nhân ghi nhận cùng 1 IP Gateway nhưng MAC thay đổi liên tục. | • **Rule SIEM**: Tương quan sự kiện gói tin ARP bị drop từ Switch DAI.<br>• **Phòng vệ**: Bật **Dynamic ARP Inspection (DAI)** kết hợp **DHCP Snooping**. |
+| **4. DoS / DDoS (SYN Flood)** | `hping3 -S --flood -p 80` gửi bão gói tin SYN không phản hồi ACK | • NetFlow: Lưu lượng Inbound tăng vọt bất thường.<br>• Tỷ lệ cờ TCP SYN cao áp đảo ($>95\%$) so với cờ ACK/FIN.<br>• CPU Router/Firewall đạt ngưỡng $100\%$. | • **Rule SIEM**: Tương quan lưu lượng NetFlow Top Talkers và CPU OID SNMP.<br>• **Phòng vệ**: Bật **TCP SYN Cookies / SYN Protection**, cấu hình **CoPP**. |
+| **5. Port Scanning (Recon)** | `nmap -sS -p 1-1000 -T4` quét trinh sát toàn bộ dải cổng mở | • Firewall Traffic Log: 1 IP nguồn liên tục gửi gói tin tới hàng trăm Destination Port khác nhau trong vòng vài giây.<br>• Suricata Alert: `ET SCAN Suspicious Nmap`. | • **Rule SIEM**: 1 Source IP gửi gói tin tới $\ge 15$ Destination Ports khác nhau trong 10s $\rightarrow$ Cảnh báo Port Scan.<br>• **Phòng vệ**: Đưa IP vào Blacklist động. |
+| **6. Thay Đổi Config Trái Phép** | Kẻ gian hoặc nhân viên nội bộ can thiệp vào CLI thiết bị ngoài thẩm quyền | • Cisco Syslog: `%SYS-5-CONFIG_I: Configured from console by admin`.<br>• Thời gian phát sinh: Ngoài giờ hành chính (sau 18h) hoặc từ IP ngoài VLAN 99. | • **Rule SIEM**: Bắt bản tin `%SYS-5-CONFIG_I` ngoài khung giờ làm việc $\rightarrow$ Cảnh báo Level 10.<br>• **Phòng vệ**: Triển khai AAA TACACS+/RADIUS, cấm ghi đè cấu hình. |
+
+---
+
+## BÀI 5: BỘ CÂU HỎI ÔN TẬP & PHẢN BIỆN HỘI ĐỒNG (VIVA Q&A)
+
+### Câu 1: Tại sao kẻ tấn công lại ưa chuộng kỹ thuật quét cổng TCP SYN Scan (`nmap -sS`) hơn là TCP Connect Scan (`nmap -sT`)?
+- **Trả lời**:
+  - `TCP Connect Scan (-sT)` hoàn thành đầy đủ chu trình bắt tay 3 bước (SYN $\rightarrow$ SYN-ACK $\rightarrow$ ACK) với hệ điều hành máy đích. Do kết nối TCP được thiết lập trọn vẹn, ứng dụng máy chủ (như Nginx, Apache) sẽ ghi nhận đầy đủ bản ghi nhật ký truy cập (Access Log), khiến hacker dễ dàng bị phát hiện.
+  - `TCP SYN Scan (-sS)` là kỹ thuật quét nửa vời (Half-open Scanning). Khi máy đích phản hồi `SYN-ACK` (chứng tỏ cổng đang mở), máy tấn công lập tức gửi gói tin `RST` (Reset) để ngắt kết nối ngay lập tức mà không gửi lại ACK. Hệ điều hành máy đích không coi đây là phiên kết nối hoàn chỉnh nên ứng dụng không ghi nhận log, giúp hacker tàng hình trước các máy chủ không có IDS.
+
+### Câu 2: Tấn công ARP Poisoning cho phép kẻ tấn công làm được những gì trong mạng nội bộ?
+- **Trả lời**:
+  - Bằng cách đầu độc bảng ARP Cache của máy trạm nạn nhân và Default Gateway, hacker biến máy tính của mình thành thiết bị trung chuyển bắt buộc (Man-In-The-Middle - MITM).
+  - Từ vị trí này, hacker có thể:
+    1. **Nghe lén toàn bộ dữ liệu bản rõ (Sniffing)**: Mật khẩu Telnet, HTTP, FTP.
+    2. **Chiếm đoạt phiên làm việc (Session Hijacking)**: Đánh cắp Cookie/Session Token.
+    3. **Chỉnh sửa dữ liệu trên đường truyền (Tampering)**: Bơm mã độc vào các luồng tải file của người dùng.
+    4. **Thực hiện tấn công DoS cục bộ**: Hủy bỏ âm thầm toàn bộ gói tin khiến nạn nhân mất mạng.

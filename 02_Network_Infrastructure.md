@@ -1,101 +1,180 @@
-# CHUYÊN ĐỀ 2: NETWORK INFRASTRUCTURE (HẠ TẦNG MẠNG DOANH NGHIỆP)
+# GIÁO TRÌNH CHUYÊN ĐỀ 2: NETWORK INFRASTRUCTURE (KIẾN TRÚC HẠ TẦNG THIẾT BỊ MẠNG)
 
-> **Mục tiêu**: Phân tích kiến trúc phần cứng, nguyên lý hoạt động và vai trò an ninh của 4 trụ cột hạ tầng mạng: **Router (Bộ định tuyến)**, **Switch (Bộ chuyển mạch)**, **Next-Gen Firewall (Tường lửa thế hệ mới)** và **Enterprise Server (Máy chủ doanh nghiệp)** trong bức tranh tổng thể về Giám sát An toàn Thông tin (SIEM/SOC).
-
----
-
-## 1. TỔNG QUAN VAI TRÒ CÁC THIẾT BỊ TRONG HỆ THỐNG GIÁM SÁT
-
-| Thiết bị | Vị trí Tầng OSI | Vai trò Chức năng Chính | Vai trò Trong Hệ Thống Giám Sát & An Ninh (SIEM) | Nguồn Dữ liệu Log & Telemetry |
-| :--- | :--- | :--- | :--- | :--- |
-| **Router** | Layer 3 (Network) | Định tuyến liên mạng, chia tách Broadcast domain, NAT, Inter-VLAN | Cảnh báo tấn công Control Plane (CoPP), phát hiện giả mạo IP nguồn (uRPF), thống kê lưu lượng mạng diện rộng | • Syslog (Link state, Auth, Config)<br>• SNMP (CPU/RAM, Traffic OID)<br>• Flexible NetFlow (Flow records) |
-| **Switch (L2/L3)** | Layer 2 & Layer 3 | Kết nối điểm cuối (End-hosts), tạo VLAN, chống vòng lặp (STP), gộp cổng (LACP) | Phát hiện tấn công nội bộ (MAC Flooding, ARP Spoofing, Rogue DHCP), nhân bản lưu lượng phục vụ phân tích mạng (SPAN Port) | • Syslog (Port-sec violation, STP change)<br>• SNMP (Port status, Error counters)<br>• SPAN/RSPAN Mirroring sang IDS/IPS |
-| **Next-Gen Firewall** | Layer 3 - Layer 7 | Phân tách Security Zones, kiểm soát truy cập Stateful, kiểm tra sâu gói tin (DPI), chống xâm nhập (IPS) | Nguồn sinh log giá trị nhất: Ghi nhận vi phạm chính sách, chặn mã độc, cảnh báo khai thác lỗ hổng, phiên VPN truy cập | • Traffic Logs (Chấp nhận / Từ chối)<br>• Threat / IPS Alert Logs<br>• User Authentication & VPN Logs<br>• Syslog RFC 5424 / CEF Format |
-| **Enterprise Server** | Layer 4 - Layer 7 | Chạy dịch vụ mạng (DNS, DHCP, AD, Web, DB) và lưu trữ dữ liệu tập trung | Vừa là mục tiêu bảo vệ trọng yếu, vừa là nền tảng máy chủ vận hành SIEM, Logstash, Wazuh Manager, Elasticsearch | • Linux Auditd / Syslog (`auth.log`, `syslog`)<br>• Windows Event Logs (Security Event ID)<br>• Application Logs (Web access/error, DB) |
+> **Mục tiêu học tập**:
+> 1. Hiểu sâu sắc kiến trúc phần cứng, nguyên lý chuyển mạch/chuyển tiếp gói tin và các cơ chế bảo vệ cốt lõi trên 4 loại thiết bị: **Router**, **Switch**, **Next-Gen Firewall (NGFW)** và **Enterprise Server**.
+> 2. Nắm vững cơ chế vận hành của **Control Plane vs Data Plane**, bảng **CAM vs TCAM**, bảng phiên **State Table**, và công nghệ kiểm tra gói tin sâu **DPI**.
+> 3. Cấu hình thực tế các cơ chế phòng thủ: **CoPP**, **uRPF**, **Port Security**, **DHCP Snooping**, **DAI**, và **SPAN Port Mirroring** để nhân bản lưu lượng về cho máy chủ IDS/IPS.
+> 4. Làm chủ bảng tra cứu Event ID quan trọng trên máy chủ (Linux Auditd / Windows Event Log) phục vụ việc tích hợp vào SIEM.
 
 ---
 
-## 2. BỘ ĐỊNH TUYẾN (ROUTER)
+## BÀI 1: BỘ ĐỊNH TUYẾN DOANH NGHIỆP (ENTERPRISE ROUTER)
 
 ```
 +-----------------------------------------------------------------------------------+
 |                            KIẾN TRÚC PHẦN CỨNG ROUTER                             |
 +-----------------------------------------------------------------------------------+
-|  CONTROL PLANE (Xử lý thông minh)  <--->  DATA PLANE (Chuyển tiếp tốc độ cao)     |
-|  - Chạy trên CPU chính                   - Chip chuyên dụng ASIC / NPU            |
-|  - Trao đổi OSPF, BGP, SSH, SNMP         - Tra cứu bảng FIB (Forwarding Base)     |
-|  - Xây dựng bảng định tuyến (RIB)        - Bảng quan hệ lân cận (Adjacency Table) |
-|  - Được bảo vệ bởi cơ chế CoPP           - Chuyển mạch Cisco Express Forwarding   |
+|  CONTROL PLANE (Mặt phẳng điều khiển)     <--->     DATA PLANE (Mặt phẳng dữ liệu)|
+|  - Xử lý bởi CPU chính (Central CPU)                - Xử lý bởi chip ASIC / NPU   |
+|  - Tính toán thuật toán OSPF, BGP, EIGRP            - Tra cứu bảng FIB tốc độ cao |
+|  - Quản lý bảng định tuyến RIB                      - Bảng quan hệ lân cận ADJ    |
+|  - Xử lý phiên quản trị SSH, SNMP, Syslog           - Chuyển mạch phần cứng CEF   |
+|  - Được bảo vệ bởi bộ lọc CoPP                      - Giảm TTL, đóng gói lại MAC  |
 +-----------------------------------------------------------------------------------+
 ```
 
-### 2.1. Chu Trình Xử Lý Gói Tin Tại Router
-1. **Bóc tách Header L2 (De-encapsulation)**: Kiểm tra MAC đích có khớp với MAC cổng Router không; kiểm tra lỗi Frame Check Sequence (FCS).
-2. **Kiểm tra IP Header & TTL**: Giảm `TTL` đi 1. Nếu `TTL = 0`, hủy gói và gửi bản tin `ICMP Time Exceeded` về máy nguồn (chống vòng lặp vô tận).
-3. **Tra cứu Bảng định tuyến (Longest Prefix Match)**: So khớp IP đích với bảng FIB/RIB, ưu tiên tuyến có Subnet Mask dài nhất (cụ thể nhất).
-4. **Đóng gói lại Header L2 mới (Re-encapsulation)**: Tra bảng ARP tìm địa chỉ MAC của Next-Hop, gán MAC nguồn mới (MAC cổng ra của router) và MAC đích mới (MAC Next-Hop).
-5. **Chuyển tiếp (Forwarding)**: Đẩy gói tin qua cổng mạng tương ứng.
+### 1.1. Chu Trình Xử Lý & Chuyển Tiếp Gói Tin (De-encapsulation & Re-encapsulation)
 
-### 2.2. Cơ Chế Bảo Mật & Giám Sát Cốt Lõi Trên Router
-- **Control Plane Policing (CoPP)**: Sử dụng chính sách Modular QoS CLI (MQC) để phân loại và giới hạn tốc độ lưu lượng gửi đến CPU Router, ngăn chặn triệt để tấn công DoS làm treo thiết bị mạng.
-- **Unicast Reverse Path Forwarding (uRPF)**: Chống giả mạo IP nguồn (IP Spoofing) bằng cách kiểm tra đường quay về của gói tin trong bảng định tuyến trước khi chấp nhận chuyển tiếp.
-- **Flexible NetFlow (FnF) / IPFIX**: Trích xuất 7 thông số nhận dạng luồng (`Source IP`, `Dest IP`, `Source Port`, `Dest Port`, `L4 Protocol`, `Ingress Interface`, `ToS/CoS`) gửi về Flow Collector.
+```mermaid
+flowchart TD
+    A["1. Nhận Frame tại Ingress Interface"] --> B["2. Kiểm tra lỗi phần cứng FCS & MAC đích"]
+    B --> C["3. Bóc L2 Header (De-encapsulation) lấy IPv4 Packet"]
+    C --> D["4. Đọc IP Header: Giảm TTL đi 1. Kiểm tra TTL > 0?"]
+    D -- "TTL = 0" --> E["Hủy gói & gửi bản tin ICMP Time Exceeded (Type 11) về nguồn"]
+    D -- "TTL > 0" --> F["5. Tra cứu bảng FIB (Forwarding Information Base - Longest Prefix Match)"]
+    F -- "Không thấy & Không Default Route" --> G["Hủy gói & gửi ICMP Destination Unreachable (Type 3)"]
+    F -- "Tìm thấy Next-Hop" --> H["6. Tra cứu Adjacency Table (hoặc ARP Cache) lấy MAC Next-Hop"]
+    H --> I["7. Đóng gói L2 Header mới: MAC nguồn = MAC cổng ra, MAC đích = MAC Next-Hop"]
+    I --> J["8. Đẩy Frame ra Egress Interface vào đường truyền"]
+```
 
 ---
 
-## 3. BỘ CHUYỂN MẠCH (SWITCH LAYER 2 & LAYER 3)
+### 1.2. Các Cơ Chế An Ninh Cốt Lõi Trên Router
 
-### 3.1. Nguyên Lý Học & Chuyển Tiếp Địa Chỉ MAC
-Switch hoạt động dựa trên **CAM Table (Content Addressable Memory Table)** thông qua 4 cơ chế:
-- **Learning**: Đọc địa chỉ MAC nguồn của frame đi vào cổng để lưu cặp `(MAC Address, Ingress Port, VLAN ID)` vào bảng CAM.
-- **Forwarding**: Nếu MAC đích đã có trong CAM Table, switch chỉ chuyển tiếp frame ra đúng cổng tương ứng (Unicast).
-- **Flooding**: Nếu MAC đích chưa có trong CAM Table (Unknown Unicast) hoặc là địa chỉ Broadcast (`FF:FF:FF:FF:FF:FF`), switch đẩy frame ra tất cả các cổng trong cùng VLAN (ngoại trừ cổng nhận vào).
-- **Filtering**: Không đẩy frame sang các cổng thuộc VLAN khác hoặc cổng bị chặn bởi Spanning Tree.
+#### A. Bảo Vệ CPU Bằng Control Plane Policing (CoPP)
+- **Vấn đề**: Kẻ tấn công gửi hàng triệu gói tin DoS nhắm trực tiếp vào IP của Router (ICMP Flood, SSH Brute-force, BGP Flood). Vì các gói tin này có IP đích là chính Router nên Data Plane phải chuyển toàn bộ lên Control Plane (CPU), làm CPU đạt $100\%$ và gây sập toàn bộ hệ thống định tuyến của doanh nghiệp.
+- **Giải pháp CoPP**: Đặt một bộ lọc chính sách QoS (MQC - Modular QoS CLI) ngay tại cổng ngõ của Control Plane để phân luồng và giới hạn tốc độ (Rate-limit) lưu lượng:
+  - *Traffic định tuyến* (OSPF, BGP): Ưu tiên tuyệt đối, không giới hạn.
+  - *Traffic quản trị* (SSH từ VLAN Management 99, SNMP từ VLAN 100): Đảm bảo băng thông nhưng giới hạn tốc độ.
+  - *Traffic rủi ro* (ICMP Echo): Giới hạn nghiêm ngặt (VD: tối đa 100 kbps), phần vượt ngưỡng tự động bị Drop.
 
-### 3.2. Cơ Chế Bảo Mật Tầng 2 (Layer 2 Security)
-- **Port Security**: Giới hạn số lượng MAC address trên một cổng vật lý, tự động `shutdown` cổng khi phát hiện vi phạm (ngăn chặn MAC Flooding).
-- **DHCP Snooping**: Phân loại cổng `Trusted` (kết nối máy chủ DHCP thật) và cổng `Untrusted` (kết nối người dùng), ngăn chặn tấn công dựng máy chủ DHCP giả mạo (Rogue DHCP Server).
-- **Dynamic ARP Inspection (DAI)**: Sử dụng cơ sở dữ liệu của DHCP Snooping để xác thực tính hợp lệ của các gói tin ARP Reply, triệt tiêu tấn công giả mạo ARP (ARP Poisoning / Man-In-The-Middle).
-- **SPAN / RSPAN (Switch Port Analyzer)**: Nhân bản toàn bộ lưu lượng của một hoặc nhiều cổng gửi về cổng kết nối với máy chủ IDS/IPS (như Snort/Suricata) phục vụ phân tích chuyên sâu.
+#### B. Chống Giả Mạo Địa Chỉ IP Nguồn (uRPF - Unicast Reverse Path Forwarding)
+- **Strict Mode (`ip verify unicast source reachable-via rx`)**: Router kiểm tra IP nguồn của gói tin đến: nếu tuyến đường quay trở lại IP nguồn đó trong bảng định tuyến **không trỏ ra đúng cổng mà gói tin vừa đi vào**, Router hủy gói tin ngay lập tức.
+- **Loose Mode (`ip verify unicast source reachable-via any`)**: Chỉ cần IP nguồn tồn tại trong bảng định tuyến là chấp nhận (dùng cho mạng có định tuyến bất đối xứng Asymmetric Routing).
+
+---
+
+## BÀI 2: BỘ CHUYỂN MẠCH (SWITCH LAYER 2 & LAYER 3)
+
+### 2.1. Cấu Trúc Phần Cứng: Bộ Nhớ CAM vs TCAM
+- **CAM (Content Addressable Memory)**: Bộ nhớ tốc độ cao chuyên dụng của Switch Layer 2, tìm kiếm chính xác nhị phân (`0` hoặc `1`) để tra cứu bảng địa chỉ MAC: `(VLAN ID + MAC Address) -> Cổng vật lý`.
+- **TCAM (Ternary Content Addressable Memory)**: Bộ nhớ hỗ trợ 3 trạng thái (`0`, `1`, và `X - Don't care`), cho phép tìm kiếm song song hàng nghìn quy tắc Access Control List (ACL) và QoS trong vòng 1 chu kỳ xung nhịp (Clock Cycle) mà không làm suy giảm tốc độ chuyển mạch dây (Wire-speed).
+
+---
+
+### 2.2. Cơ Chế Bảo Vệ Tầng 2 (Layer 2 Security Hardening)
+
+#### A. Port Security (Chống MAC Flooding)
+- Giới hạn số lượng địa chỉ MAC tối đa được phép học trên một cổng vật lý (VD: `maximum 2`).
+- Ba chế độ xử lý vi phạm (*Violation Modes*):
+  - `Protect`: Âm thầm hủy các frame từ MAC lạ, không gửi log.
+  - `Restrict`: Hủy frame, tăng bộ đếm vi phạm và **gửi bản tin SNMP Trap + Syslog** về SIEM.
+  - `Shutdown` (Mặc định): Lập tức vô hiệu hóa cổng (`err-disable`), gửi log cảnh báo.
+
+#### B. DHCP Snooping & Dynamic ARP Inspection (DAI)
+- **DHCP Snooping**: Switch chặn toàn bộ bản tin `DHCP Offer / ACK` từ các cổng `Untrusted` (cổng người dùng), chỉ cho phép từ cổng `Trusted` (nối DHCP Server thật). Đồng thời switch tự động xây dựng cơ sở dữ liệu **DHCP Snooping Binding Table** chứa: `(MAC, IP được cấp, Cổng kết nối, VLAN, Lease Time)`.
+- **DAI (Dynamic ARP Inspection)**: Chống tấn công giả mạo ARP (ARP Poisoning / MITM). Mỗi khi nhận được gói tin `ARP Reply`, Switch sẽ so khớp với bảng Binding Table của DHCP Snooping. Nếu IP và MAC trong gói ARP không trùng khớp với bảng dữ liệu xác thực, switch hủy gói ARP và gửi log cảnh báo.
+
+---
+
+### 2.3. Cấu Hình SPAN Port Mirroring (Nhân Bản Lưu Lượng Cho IDS/IPS Sensor)
 
 ```
 +-----------------------------------------------------------------------------+
 |               CƠ CHẾ MIRRORING LƯU LƯỢNG MẠNG (SPAN PORT)                   |
 +-----------------------------------------------------------------------------+
-|  [ User Port Gi/0/1 ] ---> Traffic bình thường ---> [ Core Switch / Router ] |
-|            |                                                                |
-|            +---> (SPAN Mirroring bản sao dữ liệu) ---> [ IDS/IPS Sensor ]    |
-|                                                        (Suricata / Snort)   |
-|                                                               |             |
-|                                                    Đẩy cảnh báo Syslog/JSON |
-|                                                               v             |
-|                                                       [ SIEM SERVER ]       |
+|  [ Ingress Port Gi0/1 ] ---> Traffic mạng người dùng ---> [ Core Switch ]    |
+|            |                                                    |           |
+|            +---> (SPAN Mirroring bản sao dữ liệu)               |           |
+|                                |                                v           |
+|                                v                         [ Internet ]       |
+|                       [ SPAN Port Gi0/24 ]                                  |
+|                                |                                            |
+|                                v                                            |
+|                     [ IDS SENSOR (Suricata) ]                               |
+|                                |                                            |
+|                      Xuất EVE JSON / Syslog                                 |
+|                                v                                            |
+|                    [ SIEM WAZUH / LOGSTASH ]                                |
 +-----------------------------------------------------------------------------+
+```
+
+```cisco
+! ==============================================================
+! CẤU HÌNH SPAN PORT TRÊN CISCO CATALYST SWITCH
+! ==============================================================
+Switch(config)# monitor session 1 source interface GigabitEthernet0/1 - 10 both
+Switch(config)# monitor session 1 destination interface GigabitEthernet0/24
 ```
 
 ---
 
-## 4. TƯỜNG LỬA THẾ HỆ MỚI (NEXT-GENERATION FIREWALL - NGFW)
+## BÀI 3: TƯỜNG LỬA THẾ HỆ MỚI (NEXT-GENERATION FIREWALL - NGFW)
 
-### 4.1. Kiến Trúc Kiểm Soát Trạng Thái & Vùng An Ninh (Security Zones)
-- Tường lửa phân chia mạng thành các vùng logic có mức độ tin cậy khác nhau: **WAN/Untrust (Internet)**, **DMZ (Máy chủ công khai)**, **LAN/Trust (Nội bộ)**, **Management/Monitoring (Giám sát)**.
-- Mọi kết nối đi qua Firewall đều được kiểm soát bởi **State Table (Bảng phiên)**, theo dõi chu trình bắt tay 3 bước TCP (SYN $\rightarrow$ SYN-ACK $\rightarrow$ ACK) và chỉ cho phép gói tin phản hồi hợp lệ quay trở lại.
+### 3.1. So Sánh Stateful Firewall Truyền Thống vs NGFW Hiện Đại
 
-### 4.2. Các Công Nghệ Cốt Lõi Trên NGFW
-- **Deep Packet Inspection (DPI)**: Kiểm tra toàn bộ phần tải dữ liệu (Payload) đến Layer 7 thay vì chỉ xem xét IP/Port ở Layer 3/4.
-- **Application Identification (App-ID)**: Nhận diện chính xác ứng dụng (VD: Facebook, TeamViewer, BitTorrent, SSH) bất kể ứng dụng đó sử dụng cổng chuẩn hay cổng ngụy trang.
-- **Intrusion Prevention System (IPS)**: Quét luồng dữ liệu theo thời gian thực để đối chiếu với hàng chục nghìn chữ ký tấn công (Signatures), tự động Drop gói tin và gửi cảnh báo về SIEM.
-- **SSL/TLS Decryption**: Giải mã lưu lượng HTTPS để kiểm tra mã độc ẩn giấu bên trong các luồng dữ liệu được mã hóa.
+| Tiêu chí | Stateful Firewall Truyền thống (L3/L4) | Next-Generation Firewall (NGFW - L7) |
+| :--- | :--- | :--- |
+| **Phạm vi kiểm tra** | Chỉ kiểm tra IP Header và Port TCP/UDP | Kiểm tra sâu toàn bộ phần thân dữ liệu (Deep Packet Inspection - DPI) |
+| **Nhận diện ứng dụng** | Phụ thuộc vào Port (VD: Cứ Port 80 là coi là Web) | Nhận diện độc lập với Port (**App-ID** - Phát hiện BitTorrent ngụy trang qua port 443) |
+| **Nhận diện danh tính** | Chỉ biết địa chỉ IP (`192.168.10.15`) | Đồng bộ Active Directory (**User-ID** - Định danh rõ `corp\nguyen_van_a`) |
+| **Bảo vệ chống mã độc** | Phải mua thêm thiết bị IPS riêng | Tích hợp sẵn **IPS Engine**, **Antivirus theo luồng**, **Sandbox đám mây** |
+| **Giải mã SSL/TLS** | Không thể giải mã (Mù trước 90% lưu lượng HTTPS) | Có chip chuyên dụng giải mã **SSL/TLS Decryption** để kiểm tra mã độc |
 
 ---
 
-## 5. MÁY CHỦ DOANH NGHIỆP (ENTERPRISE SERVER)
+### 3.2. Cấu Trúc Bảng Phiên (State Table) & Chu Trình Kiểm Soát Trạng Thái
+Khi máy trạm nội bộ khởi tạo kết nối Web ra Internet, Tường lửa tạo một mục trong State Table:
+- `Protocol`: TCP
+- `Inside Host`: `192.168.10.15:49152`
+- `Outside Host`: `142.250.190.46:443`
+- `Connection State`: `ESTABLISHED`
+- `TCP Sequence Tracking`: Ghi nhớ số Seq/Ack hợp lệ.
 
-### 5.1. Vai Trò Máy Chủ Trong Đề Tài An Toàn & Giám Sát Mạng
-1. **Nền tảng Vận hành Hệ thống Giám sát**:
-   - Máy chủ Linux (Ubuntu Server / Rocky Linux) triển khai **Wazuh Manager / Indexer**, **Elasticsearch / Logstash / Kibana**, **rsyslog-ng**.
-   - Máy chủ Windows Server triển khai **Active Directory Domain Services (AD DS)** quản lý xác thực tập trung.
-2. **Đối tượng Giám sát Trọng yếu**:
-   - Ghi nhận nhật ký đăng nhập thất bại liên tiếp (Event ID 4625 trên Windows hoặc `Failed password` trong `/var/log/auth.log` trên Linux).
-   - Giám sát tính toàn vẹn của tệp cấu hình hệ thống (FIM - File Integrity Monitoring trên các file `/etc/passwd`, `/etc/shadow`, `C:\Windows\System32\drivers\etc\hosts`).
-   - Cung cấp dữ liệu SNMP Host MIB để theo dõi tỷ lệ chiếm dụng CPU, RAM, Disk I/O.
+Khi máy chủ ngoài Internet gửi gói tin phản hồi về, Firewall so khớp với State Table:
+- Gói tin phản hồi đúng luồng $\rightarrow$ Cho phép đi qua mà không cần viết luật chiều ngược lại.
+- Gói tin từ bên ngoài tự ý gửi vào mà không có trong State Table $\rightarrow$ Hủy ngay lập tức (Drop) và ghi log.
+
+---
+
+## BÀI 4: MÁY CHỦ DOANH NGHIỆP (ENTERPRISE SERVER) & NHẬT KÝ AN NINH
+
+### 4.1. Vai Trò Kép Của Máy Chủ Trong Đề Tài
+1. **Máy chủ Đối tượng (Target / Monitored Servers)**: Nơi chứa dữ liệu kinh doanh, Domain Controller, Web Application, Database.
+2. **Máy chủ Giám sát (SOC Infrastructure)**: Nơi triển khai Wazuh Manager, Wazuh Indexer, Logstash, Elasticsearch, Kibana, Rsyslog Server.
+
+---
+
+### 4.2. Bảng Tra Cứu Windows Security Event IDs Trọng Yếu
+
+Hệ điều hành Windows Server ghi nhận các sự kiện an ninh thông qua mã Event ID chuẩn:
+
+| Event ID | Tên Sự Kiện | Ý Nghĩa An Ninh & Tình Huống Giám Sát |
+| :---: | :--- | :--- |
+| **`4624`** | An account was successfully logged on | Đăng nhập thành công (Ghi nhận kiểu Logon Type: 2=Local, 3=Network, 10=RDP) |
+| **`4625`** | An account failed to log on | **Đăng nhập thất bại** (Dấu hiệu của tấn công dò mật khẩu Brute-force / Password Spraying) |
+| **`4720`** | A user account was created | Tạo tài khoản người dùng mới (Phát hiện hacker tạo tài khoản Backdoor) |
+| **`4728`** | A member was added to a security group | Thêm người dùng vào nhóm đặc quyền (VD: Nhóm `Domain Admins`) |
+| **`1102`** | The audit log was cleared | **Nhật ký an ninh bị xóa** (Hành vi xóa dấu vết nguy hiểm của kẻ xâm nhập) |
+| **`7045`** | A new service was installed in the system | Một dịch vụ mới được cài đặt (Dấu hiệu duy trì quyền truy cập - Persistence) |
+
+---
+
+### 4.3. Giám Sát Nhật Ký Trên Máy Chủ Linux (Auditd & Syslog)
+- `/var/log/auth.log` (Ubuntu/Debian) hoặc `/var/log/secure` (RHEL/Rocky Linux): Ghi nhận các sự kiện xác thực `sshd`, `sudo`, `su`.
+- `Auditd (Linux Audit Daemon)`: Module nhân Linux cho phép ghi vết chi tiết mọi lời gọi hệ thống (System calls), chỉnh sửa file cấu hình nhạy cảm (`/etc/passwd`, `/etc/shadow`), hoặc thực thi lệnh với quyền `root`.
+
+---
+
+## BÀI 5: BỘ CÂU HỎI ÔN TẬP & PHẢN BIỆN HỘI ĐỒNG (VIVA Q&A)
+
+### Câu 1: Tại sao Switch Layer 2 lại dễ bị tấn công tràn bảng CAM (MAC Flooding) và cơ chế Port Security xử lý ra sao?
+- **Trả lời**:
+  - Dung lượng bộ nhớ CAM của switch là hữu hạn (thường từ 8.000 đến 128.000 địa chỉ). Kẻ tấn công dùng công cụ như `macof` phát sinh hàng triệu địa chỉ MAC giả trong vài giây khiến bảng CAM bị đầy. Khi đó, Switch không thể học thêm MAC mới và buộc phải chuyển sang chế độ **Fail-Open (hoạt động như một Hub)**, đẩy toàn bộ gói tin ra mọi cổng, cho phép hacker bắt trọn gói tin của người khác.
+  - **Port Security** ngăn chặn điều này bằng cách đặt ngưỡng giới hạn số MAC tối đa trên cổng và tự động khóa cổng (`shutdown / err-disable`) ngay khi xuất hiện địa chỉ MAC thứ $N+1$.
+
+### Câu 2: Sự khác biệt bản chất giữa SPAN Port (Port Mirroring) và Inline IPS là gì?
+- **Trả lời**:
+  - `SPAN Port` là giải pháp giám sát thụ động ngoài luồng (Passive / Out-of-band). Switch tạo một bản sao của gói tin để đẩy sang cho cảm biến IDS. Nếu cảm biến bị treo hoặc quá tải, mạng sản xuất của doanh nghiệp **hoàn toàn không bị ảnh hưởng**, nhưng IDS không thể trực tiếp ngăn chặn gói tin độc hại theo thời gian thực.
+  - `Inline IPS` đặt thiết bị đứng trực tiếp trên đường truyền chính (Active). Mọi gói tin phải đi xuyên qua IPS để được quét chữ ký. IPS có thể tự động Drop gói tin độc hại ngay lập tức, nhưng nếu IPS bị nghẽn phần cứng, toàn bộ mạng sẽ bị gián đoạn hoặc tăng độ trễ đường truyền.
