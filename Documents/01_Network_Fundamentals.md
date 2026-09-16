@@ -259,13 +259,13 @@ Quy tắc **Block Size (Kích thước khối)**: Trong Octet xảy ra việc ch
 
 ---
 
-### 3.4. Bài Toán Chia VLSM Thực Tế Cho Hệ Thống An Toàn Mạng Doanh Nghiệp
+### 3.4. Bảng Phân Bổ Mạng Con (VLSM) Cho Mô Hình Mạng Giám Sát Doanh Nghiệp
 
-**Đề bài thiết kế**: Doanh nghiệp được quy hoạch không gian mạng gốc `192.168.0.0/16`. Hãy tính toán và cấp phát các subnet nhỏ theo kỹ thuật VLSM sao cho tối ưu không gian địa chỉ, chuẩn hóa theo số hiệu VLAN để thuận tiện cho việc viết luật tường lửa và giám sát SIEM.
+Dưới đây là thiết kế phân bổ địa chỉ IP mạng con (**Variable Length Subnet Masking - VLSM**) cho một hệ thống mạng doanh nghiệp điển hình, được tối ưu hóa theo nhu cầu thực tế của từng phân vùng chức năng và chuẩn hóa số hiệu VLAN đồng bộ với Octet thứ 3 để trực quan, mạch lạc và thuận tiện khi bảo vệ đồ án:
 
 ```mermaid
 flowchart TD
-    ROOT["Khối mạng gốc RFC 1918: 192.168.0.0/16"]
+    ROOT["Không Gian Địa Chỉ Doanh Nghiệp (RFC 1918)"]
     
     ROOT --> S1["1. VLAN 10 (User Kế toán/Hành chính): 192.168.10.0/24 (Cần 200 hosts)"]
     ROOT --> S2["2. VLAN 20 (User Kỹ thuật/R&D): 192.168.20.0/24 (Cần 150 hosts)"]
