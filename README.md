@@ -1,3 +1,9 @@
+> [!IMPORTANT]
+> **TÀI LIỆU THAM KHẢO TẠM THỜI** – Chưa có thông tin khảo sát thực tế về hạ tầng Tòa E.
+> Yêu cầu Network Engineer và Support Team tiến hành khảo sát thực địa, cung cấp bản báo cáo và sơ đồ mạng thật của Tòa E để xây dựng mô hình khả thi và chính xác.
+
+---
+
 # HỆ THỐNG GIÁM SÁT VÀ QUẢN LÝ NHẬT KÝ AN TOÀN - TÒA E (ĐẠI HỌC ĐIỆN LỰC)
 
 > **Môn học / Đồ án:** Phân tích và Thiết kế An toàn Mạng Máy tính  
@@ -8,7 +14,7 @@
 
 ## 📑 MỤC LỤC
 1. [Tổng Quan Đề Tài & Bối Cảnh Tòa E](#1-tổng-quan-đề-tài--bối-cảnh-tòa-e)
-2. [Mô Hình Kiến Trúc Hệ Thống (3 Tầng)](#2-mô-hình-kiến-trúc-hệ-thống-3-tầng)
+2. [Mô Hình Kiến Trúc Hệ Thống](#2-mô-hình-kiến-trúc-hệ-thống)
 3. [Quy Hoạch Phân Vùng Mạng (VLAN Segmentation)](#3-quy-hoạch-phân-vùng-mạng-vlan-segmentation)
 4. [Phân Chia Nhiệm Vụ 5 Thành Viên](#4-phân-chia-nhiệm-vụ-5-thành-viên)
 5. [Ma Trận Trách Nhiệm (RACI Matrix)](#5-ma-trận-trách-nhiệm-raci-matrix)
@@ -29,38 +35,38 @@ Tòa E trường Đại học Điện Lực là khu phức hợp học tập và
 
 ---
 
-## 2. MÔ HÌNH KIẾN TRÚC HỆ THỐNG (CHUẨN HÓA CHO ĐỒ ÁN SINH VIÊN)
+## 2. MÔ HÌNH KIẾN TRÚC HỆ THỐNG
 
 Hệ thống được thiết kế theo hướng **thực tế, tối ưu tài nguyên (chạy mượt trên máy cá nhân/máy ảo 8GB-16GB RAM)** với mô hình thu thập và giám sát nhật ký tập trung sử dụng **Wazuh All-in-One**:
 
 ```mermaid
 flowchart TB
-    subgraph LAN["HẠ TẦNG MẠNG TÒA E (Mô phỏng EVE-NG / Cisco Packet Tracer / VMware)"]
-        SW["Switch Tòa E (VLAN 10, 20, 30, 40)"]
+    subgraph LAN["HẠ TẦNG MẠNG TÒA E - Mô phỏng EVE-NG / CPT / VMware"]
+        SW["Switch Tòa E - VLAN 10, 20, 30, 40"]
         SRV["Máy chủ Linux / Windows Server"]
         CLI["Máy trạm Client Phòng Lab"]
     end
 
-    subgraph SIEM["MÁY CHỦ GIÁM SÁT TẬP TRUNG (Wazuh All-in-One Server)"]
-        RSYS["Syslog Receiver (UDP 514)"]
-        WZ_MGR["Wazuh Manager (Engine phân tích log & luật có sẵn)"]
-        WZ_DB["Wazuh Dashboard (Giao diện Web SOC trực quan)"]
-        BOT["Telegram Alerting (Bắn tin nhắn khi bị tấn công)"]
+    subgraph SIEM["MÁY CHỦ GIÁM SÁT TẬP TRUNG - Wazuh All-in-One"]
+        RSYS["Syslog Receiver - UDP 514"]
+        WZMGR["Wazuh Manager - Phân tích log"]
+        WZDB["Wazuh Dashboard - Giao diện Web SOC"]
+        BOT["Telegram Alerting - Cảnh báo tức thời"]
     end
 
     SW -->|1. Đẩy Syslog sự kiện mạng| RSYS
-    SRV -->|2. Wazuh Agent (Gửi log hệ điều hành & dịch vụ)| WZ_MGR
+    SRV -->|2. Wazuh Agent gửi log OS và dịch vụ| WZMGR
     CLI -->|3. Thử nghiệm đăng nhập / Quét mạng| SW
-    
-    RSYS --> WZ_MGR
-    WZ_MGR --> WZ_DB
-    WZ_MGR -->|4. Cảnh báo khẩn cấp (Rule Level >= 8)| BOT
+
+    RSYS --> WZMGR
+    WZMGR --> WZDB
+    WZMGR -->|4. Cảnh báo khẩn cấp Rule Level ≥ 8| BOT
 ```
 
 ---
 
 ## 3. QUY HOẠCH PHÂN VÙNG MẠNG (VLAN SEGMENTATION)
-*(Thiết kế gọn gàng, đúng chuẩn môn học mạng máy tính)*
+*(Thiết kế theo mô hình phân vùng chuẩn cho môi trường học thuật)*
 
 | VLAN ID | Tên Phân Vùng | Mục Đích Sử Dụng | Dải Mạng IP | Thiết lập An ninh |
 | :---: | :--- | :--- | :--- | :--- |
@@ -71,7 +77,7 @@ flowchart TB
 
 ---
 
-## 4. PHÂN CHIA NHIỆM VỤ 5 THÀNH VIÊN (VỪA SỨC & RÕ RÀNG)
+## 4. PHÂN CHIA NHIỆM VỤ 5 THÀNH VIÊN
 
 ### 👑 1. NGUYỄN ANH XUÂN (Trưởng nhóm - Phụ trách Hạ tầng máy chủ & SIEM)
 * **Mục tiêu:** Dựng thành công "trung tâm tiếp nhận và xử lý log".
@@ -185,5 +191,6 @@ Tất cả các tài liệu chi tiết, cấu hình mẫu và câu hỏi vấn �
    - **TRỌNG TÂM ĐỀ TÀI - Hệ thống Giám sát & Quản lý Nhật ký tập trung:** SNMPv3, RFC 5424 Syslog, NetFlow/IPFIX, Pipeline ELK/Wazuh, Tập luật tương quan và Kịch bản kiểm thử giả lập tấn công (Hydra, Nmap, hping3).
 
 ---
+
 > [!TIP]
 > Mỗi chuyên đề đều có sẵn: **Lý thuyết học thuật chuẩn** + **Sơ đồ chu trình** + **Cấu hình mẫu dòng lệnh (Cisco IOS, Linux Rsyslog, Wazuh XML)** + **Bộ câu hỏi ôn tập & phản biện bảo vệ đồ án (Viva Q&A)**.
