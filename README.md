@@ -145,11 +145,11 @@ flowchart TB
 
 | Giai đoạn & Hạng mục công việc | Nguyễn Anh Xuân (Lead) | Nguyễn Phúc Vượng (Net 1) | Nguyễn Minh Trí (Net 2) | Nguyễn Thành Đạt (Security) | Lê Tuấn Anh (Sec Support) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| 1. Thiết kế sơ đồ mạng Tòa E & Cấu hình VLAN/IP | I | **R / A** | C | I | I |
-| 2. Cấu hình ACLs, Port Security & Đẩy Syslog Switch | I | C | **R / A** | I | I |
+| 1. Thiết kế sơ đồ mạng Tòa E & Cấu hình VLAN/IP | C | **R / A** | C | I | I |
+| 2. Cấu hình ACLs, Port Security & Đẩy Syslog Switch | C | C | **R / A** | I | I |
 | 3. Cài đặt Máy chủ Wazuh SIEM & Bot Telegram | **R / A** | I | C | C | I |
 | 4. Cài Wazuh Agent (Linux Server) & Pentest Kali Linux | C | I | I | **R / A** | C |
-| 5. Cài Wazuh Agent (Windows) & Test đăng nhập sai | I | I | I | **A** | **R** |
+| 5. Cài Wazuh Agent (Windows) & Test đăng nhập sai | C | I | I | **A** | **R** |
 | 6. Tùy chỉnh Dashboard Web Wazuh & Chụp ảnh minh chứng | **A** | I | I | C | **R** |
 | 7. Soạn thảo Báo cáo Word & Làm Slide thuyết trình | **A** | C | C | C | **R** |
 
