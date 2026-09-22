@@ -1,13 +1,7 @@
-> [!IMPORTANT]
-> **TÀI LIỆU THAM KHẢO TẠM THỜI** – Chưa có thông tin khảo sát thực tế về hạ tầng Tòa E.
-> Yêu cầu Network Engineer và Support Team tiến hành khảo sát thực địa, cung cấp bản báo cáo và sơ đồ mạng thật của Tòa E để xây dựng mô hình khả thi và chính xác.
-
----
-
-# HỆ THỐNG GIÁM SÁT VÀ QUẢN LÝ NHẬT KÝ AN TOÀN - TÒA E (ĐẠI HỌC ĐIỆN LỰC)
+# HỆ THỐNG GIÁM SÁT VÀ QUẢN LÝ NHẬT KÝ AN TOÀN CHO DOANH NGHIỆP
 
 > **Môn học / Đồ án:** Phân tích và Thiết kế An toàn Mạng Máy tính  
-> **Đơn vị áp dụng:** Tòa E - Trường Đại học Điện Lực (EPU)  
+> **Đơn vị / Phạm vi áp dụng:** Hệ thống Mạng Doanh nghiệp (Enterprise Network)  
 > **Kiến trúc cốt lõi:** 3-Tier Enterprise SIEM & Telemetry (Wazuh / ELK Stack, Suricata NIDS, Prometheus & Grafana, Syslog RFC 5424, SNMPv3, NetFlow).
 
 ---
