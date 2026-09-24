@@ -105,25 +105,34 @@
 * **Hệ thống định tuyến & tường lửa:** Chỉ có 1 Router Gateway nhà mạng cơ bản, thiếu Firewall chuyên dụng và thiếu bộ lọc kiểm soát truy cập (ACLs).
 * **Quản lý nhật ký:** Log nằm phân tán trên từng máy trạm và máy chủ, không có máy chủ thu thập tập trung; khi xảy ra sự cố không có dữ liệu đối soát.
 
-### 2.2 Phân tích Ma trận Rủi ro & Lỗ hổng (Risk Matrix)
+### 2.2 Phân tích Ma trận Rủi ro & Lỗ hổng (Risk Assessment Matrix)
 
-```mermaid
-quadrantChart
-    title Ma Trận Đánh Giá Mức Độ Rủi Ro Hệ Thống Mạng Doanh Nghiệp
-    x-axis "Khả Năng Xảy Ra Thấp" --> "Khả Năng Xảy Ra Cao"
-    y-axis "Mức Độ Tác Động Thấp" --> "Mức Độ Tác Động Nghiêm Trọng"
-    quadrant-1 "Rủi Ro Cực Cao (Critical) - Ưu Tiên Xử Lý Số 1"
-    quadrant-2 "Rủi Ro Đáng Kể (High) - Cần Giám Sát Chặt"
-    quadrant-3 "Rủi Ro Thấp (Low) - Chấp Nhận & Kiểm Soát Định Kỳ"
-    quadrant-4 "Rủi Ro Trung Bình (Medium) - Thiết Lập Chính Sách"
-    "Dò Quét Mật Khẩu SSH/DB (Brute-force)": [0.85, 0.90]
-    "Mã Độc Lây Lan Từ Mạng Guest/Wi-Fi": [0.78, 0.85]
-    "Tấn Công Từ Chối Dịch Vụ (SYN Flood)": [0.70, 0.80]
-    "Xâm Nhập Trái Phép Vùng CSDL Tối Mật": [0.45, 0.95]
-    "Cắm Thiết Bị Lạ Vào Cổng Mạng Văn Phòng": [0.65, 0.55]
-    "Quét Thăm Dò Cổng Dịch Vụ (Port Scan)": [0.80, 0.40]
-    "Truy Cập Web Ngoài Giờ Sai Quy Định": [0.60, 0.20]
-```
+Đánh giá rủi ro an toàn thông tin hệ thống mạng doanh nghiệp theo phương pháp chuẩn **NIST SP 800-30 / ISO 27005** dựa trên công thức:
+$$\text{Mức Độ Rủi Ro (Risk Score)} = \text{Khả Năng Xảy Ra (Likelihood: 1-5)} \times \text{Mức Độ Tác Động (Impact: 1-5)}$$
+
+#### 📊 Bảng Ma Trận Phân Cấp Rủi Ro 5x5
+
+| Khả Năng Xảy Ra (Likelihood) \ Mức Tác Động (Impact) | 1 - Rất Thấp (Negligible) | 2 - Thấp (Minor) | 3 - Vừa (Moderate) | 4 - Cao (Major) | 5 - Nghiêm Trọng (Catastrophic) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **5 - Gần như chắc chắn (Almost Certain)** | Medium (5) | High (10) | High (15) | **Critical (20)** | **Critical (25)** |
+| **4 - Rất có thể (Likely)** | Low (4) | Medium (8) | High (12) | High (16) | **Critical (20)** |
+| **3 - Có thể xảy ra (Possible)** | Low (3) | Medium (6) | Medium (9) | High (12) | High (15) |
+| **2 - Ít có khả năng (Unlikely)** | Low (2) | Low (4) | Medium (6) | Medium (8) | High (10) |
+| **1 - Rất hiếm khi (Rare)** | Low (1) | Low (2) | Low (3) | Low (4) | Medium (5) |
+
+---
+
+#### 📋 Bảng Định Danh & Đánh Giá Chi Tiết Rủi Ro Mạng Doanh Nghiệp (Risk Register)
+
+| Mã Rủi Ro | Mối Đe Dọa & Lỗ Hổng Hiện Hữu | Vùng Bị Ảnh Hưởng | Khả Năng (L: 1-5) | Tác Động (I: 1-5) | Điểm & Cấp Độ Rủi Ro | Biện Pháp Kiểm Soát & Giải Pháp Kỹ Thuật |
+| :---: | :--- | :---: | :---: | :---: | :---: | :--- |
+| **RSK-01** | **Xâm nhập & Đánh cắp CSDL Tối Mật:** Hacker/mã độc từ mạng User hoặc Guest truy cập trực tiếp cổng CSDL (MySQL/Postgres) | `Data_Zone` (VLAN 30) | 3 *(Có thể)* | 5 *(Nghiêm trọng)* | **15 - High / Critical** | Cô lập VLAN 30 bằng Extended ACLs, chỉ cho phép Backend Server kết nối cổng DB; kích hoạt giám sát FIM và audit log CSDL trên Wazuh. |
+| **RSK-02** | **Tấn công Dò quét Mật khẩu (Brute-force SSH/RDP):** Kẻ tấn công quét và dò mật khẩu máy chủ quản trị / DB Server | `App_Server` (VLAN 20) | 5 *(Gần như chắc chắn)* | 4 *(Cao)* | **20 - Critical** | Khóa SSH chỉ cho phép Key-based Auth từ VLAN 10; cấu hình Wazuh Active Response tự động chặn IP (Drop via Firewall) khi sai pass > 5 lần. |
+| **RSK-03** | **Lây lan Mã độc từ Khách & Wi-Fi Vãng lai:** Thiết bị cá nhân của khách mang mã độc kết nối vào mạng nội bộ | `Guest_Zone` (VLAN 70) | 4 *(Rất có thể)* | 4 *(Cao)* | **16 - Critical** | Cô lập hoàn toàn VLAN 70 (Client Isolation + chỉ cho phép ra Internet, cấm định tuyến sang các VLAN 10-60). |
+| **RSK-04** | **Tấn công Từ chối Dịch vụ (SYN Flood / DoS):** Bắn lưu lượng lớn làm tê liệt Web Server nội bộ hoặc cổng WAN | `App_Server` (VLAN 20) | 4 *(Rất có thể)* | 4 *(Cao)* | **16 - Critical** | Bật TCP Intercept / SYN Flood Protection trên Firewall; giám sát lưu lượng và cảnh báo qua Telegram Bot khi có lưu lượng bất thường. |
+| **RSK-05** | **Cắm thiết bị lạ vào cổng mạng Văn phòng:** Kẻ xấu hoặc nhân viên cắm laptop cá nhân/thiết bị lạ vào Switch sảnh/phòng ban | `User_Zone` / `Infra` | 3 *(Có thể)* | 3 *(Vừa)* | **9 - Medium** | Bật **Port Security** (giới hạn 1 MAC address, vi phạm sẽ `shutdown`/`restrict`), bật **DHCP Snooping** và **Dynamic ARP Inspection (DAI)**. |
+| **RSK-06** | **Quét thăm dò cổng dịch vụ (Port Scanning):** Dò quét phát hiện các cổng mở, lỗ hổng dịch vụ Web/App | `Toàn mạng` | 5 *(Gần như chắc chắn)* | 2 *(Thấp)* | **10 - High** | Thiết lập Wazuh Rule phát hiện kết nối đa cổng bất thường trong thời gian ngắn; phân quyền ACL chặn quét giữa các VLAN. |
+| **RSK-07** | **Mất mát & Thiếu nhất quán Nhật ký An toàn:** Sự cố xảy ra nhưng log nằm rải rác, sai lệch thời gian không điều tra được | `Toàn hệ thống` | 4 *(Rất có thể)* | 4 *(Cao)* | **16 - Critical** | Triển khai **Wazuh SIEM + Rsyslog tập trung**, bắt buộc đồng bộ thời gian toàn bộ thiết bị qua **máy chủ NTP**. |
 
 ### 2.3 Yêu cầu chuyển đổi sang hệ thống bảo mật mới
 1. **Phân vùng mạng theo vùng rủi ro (Zone-based Network Segmentation):** Chia tách 7 VLAN riêng biệt cho từng khối phòng ban và mức độ nhạy cảm dữ liệu.
