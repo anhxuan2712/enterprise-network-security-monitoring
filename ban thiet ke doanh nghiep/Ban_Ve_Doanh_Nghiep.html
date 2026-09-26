@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bản Vẽ Sơ Đồ Thiết Kế Mạng & Thiết Bị Phòng Ban Doanh Nghiệp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-blueprint: #061122;
+      --bg-paper: #0b192e;
+      --grid-line: rgba(56, 189, 248, 0.08);
+      --grid-line-bold: rgba(56, 189, 248, 0.16);
+      --cyan-tech: #38bdf8;
+      --blue-accent: #60a5fa;
+      --amber-tech: #fbbf24;
+      --emerald-tech: #34d399;
+      --rose-tech: #f43f5e;
+      --purple-tech: #c084fc;
+      --border-box: rgba(56, 189, 248, 0.35);
+      --text-main: #e2e8f0;
+      --text-dim: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-blueprint);
+      background-image: 
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(var(--grid-line-bold) 2px, transparent 2px),
+        linear-gradient(90deg, var(--grid-line-bold) 2px, transparent 2px);
+      background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .blueprint-frame {
+      max-width: 1560px;
+      margin: 0 auto;
+      border: 3px double var(--cyan-tech);
+      border-radius: 8px;
+      padding: 24px;
+      background: rgba(11, 25, 46, 0.92);
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    /* TIÊU ĐỀ KHUNG BẢN VẼ TIÊU CHUẨN KỸ THUẬT (CAD TITLE BLOCK) */
+    .title-block {
+      border: 2px solid var(--cyan-tech);
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      margin-bottom: 24px;
+      background: rgba(6, 17, 34, 0.85);
+    }
+
+    @media (max-width: 900px) {
+      .title-block { grid-template-columns: 1fr; }
+    }
+
+    .title-cell {
+      padding: 12px 18px;
+      border-right: 1px solid var(--border-box);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .title-cell:last-child { border-right: none; }
+
+    .title-cell h1 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .title-cell .sub {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .meta-line {
+      font-size: 11px;
+      margin: 2px 0;
+      color: #cbd5e1;
+    }
+
+    .meta-line strong {
+      color: var(--cyan-tech);
+    }
+
+    /* NAVIGATION TABS */
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border-box);
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab-btn {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid var(--border-box);
+      color: var(--text-dim);
+      padding: 8px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      color: #fff;
+    }
+
+    .nav-tab-btn.active {
+      background: var(--cyan-tech);
+      color: #061122;
+      border-color: var(--cyan-tech);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* CAD DIAGRAM BOXES */
+    .schematic-box {
+      border: 1px solid var(--border-box);
+      background: rgba(6, 17, 34, 0.7);
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed var(--border-box);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+
+    .box-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cyan-tech);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .box-badge {
+      font-size: 10px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--cyan-tech);
+      color: var(--cyan-tech);
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+
+    /* ASCII / TEXT SCHEMATIC RENDERER */
+    pre.ascii-schematic {
+      background: #040914;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 4px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: #e2e8f0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .text-highlight { color: #38bdf8; font-weight: 700; }
+    .text-orange { color: #f97316; font-weight: 700; }
+    .text-red { color: #f43f5e; font-weight: 700; }
+    .text-green { color: #34d399; font-weight: 700; }
+    .text-purple { color: #c084fc; font-weight: 700; }
+    .text-yellow { color: #fbbf24; font-weight: 700; }
+
+    /* ROOMS GRID (CAD STYLE) */
+    .rooms-cad-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .room-schematic-card {
+      border: 1px solid var(--border-box);
+      background: #050d1a;
+      border-radius: 6px;
+      padding: 14px;
+      position: relative;
+    }
+
+    .room-schematic-card:hover {
+      border-color: var(--cyan-tech);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+    }
+
+    .room-schematic-card .code-pill {
+      font-size: 11px;
+      font-weight: 800;
+      color: #061122;
+      background: var(--cyan-tech);
+      padding: 2px 6px;
+      border-radius: 2px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    /* DEVICE LEGEND */
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 12px 18px;
+      background: rgba(4, 9, 20, 0.8);
+      border: 1px dashed var(--border-box);
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 11px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dev-icon {
+      padding: 1px 5px;
+      border-radius: 2px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* SEARCH FILTER */
+    .search-input {
+      background: #040914;
+      border: 1px solid var(--border-box);
+      color: #f1f5f9;
+      padding: 6px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border-radius: 4px;
+      outline: none;
+      width: 280px;
+    }
+
+    .search-input:focus {
+      border-color: var(--cyan-tech);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+<div class="blueprint-frame">
+  <!-- KHUNG TÊN TIÊU CHUẨN BẢN VẼ KỸ THUẬT (TITLE BLOCK) -->
+  <div class="title-block">
+    <div class="title-cell">
+      <h1>HỆ THỐNG MẠNG NỘI BỘ & PHÂN BỔ THIẾT BỊ PHÒNG BAN</h1>
+      <span class="sub">TẬP ĐOÀN CÔNG NGHỆ 2 TÒA NHÀ • TỔNG 23 PHÒNG BAN • 144 NHÂN SỰ</span>
+    </div>
+    <div class="title-cell">
+      <div class="meta-line"><strong>QUY MÔ:</strong> TÒA A (5 TẦNG) + TÒA B (4 TẦNG)</div>
+      <div class="meta-line"><strong>TIÊU CHUẨN:</strong> CISCO HIERARCHICAL 3-TIER</div>
+      <div class="meta-line"><strong>GIAO THỨC:</strong> 802.1Q VLAN TRUNKING / OSPF</div>
+    </div>
+    <div class="title-cell">
+      <div class="meta-line"><strong>BẢN VẼ SỐ:</strong> NET-DWG-2026-V1</div>
+      <div class="meta-line"><strong>NGÀY DUYỆT:</strong> 25/09/2026</div>
+      <div class="meta-line"><strong>TÌNH TRẠNG:</strong> ĐÃ PHÊ DUYỆT THI CÔNG</div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION TABS -->
+  <div class="nav-tabs">
+    <button class="nav-tab-btn active" onclick="switchTab('tab-topo', this)">[1] BẢN VẼ TOPO MẠNG TỔNG THỂ (NETWORK CORE & BACKBONE)</button>
+    <button class="nav-tab-btn" onclick="switchTab('tab-servers', this)">[2] PHÂN VÙNG SERVER FARM & DATA CENTER</button>
+    <button class="nav-tab-btn" onclick="switchTab('tab-rooms-a', this)">[3] BẢN VẼ CHI TIẾT PHÒNG TÒA A (KỸ THUẬT)</button>
+    <button class="nav-tab-btn" onclick="switchTab('tab-rooms-b', this)">[4] BẢN VẼ CHI TIẾT PHÒNG TÒA B (KINH DOANH)</button>
+    <button class="nav-tab-btn" onclick="switchTab('tab-vlan', this)">[5] BẢNG QUY HOẠCH VLAN & SUBNET IP</button>
+  </div>
+
+  <!-- CHÚ DẪN THIẾT BỊ -->
+  <div class="legend-bar">
+    <span style="color:var(--cyan-tech); font-weight:700;">KÝ HIỆU BẢN VẼ:</span>
+    <div class="legend-item"><span class="dev-icon" style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8;">[CORE-SW]</span> Core Switch Layer 3</div>
+    <div class="legend-item"><span class="dev-icon" style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24;">[DIST-SW]</span> Distribution Switch</div>
+    <div class="legend-item"><span class="dev-icon" style="background:#1e293b; color:#34d399; border:1px solid #34d399;">[SW-xxx]</span> Access Switch Tầng/Phòng</div>
+    <div class="legend-item"><span class="dev-icon" style="background:#1e293b; color:#c084fc; border:1px solid #c084fc;">[AP]</span> Bộ phát WiFi Access Point</div>
+    <div class="legend-item"><span class="dev-icon" style="background:#1e293b; color:#f43f5e; border:1px solid #f43f5e;">PC01..PCn</span> Máy trạm người dùng</div>
+    <div class="legend-item"><span class="dev-icon" style="background:#1e293b; color:#94a3b8; border:1px solid #94a3b8;">Printer / Phone</span> Máy in / Điện thoại IP</div>
+    <div class="legend-item"><span style="color:#38bdf8;">═══ Fiber Trunk</span> Cáp quang liên tòa 10Gbps</div>
+    <div class="legend-item"><span style="color:#64748b;">─── Cat6 Access</span> Cáp mạng UTP 1Gbps</div>
+  </div>
+
+  <!-- TAB 1: SƠ ĐỒ TOPO MẠNG TỔNG THỂ -->
+  <div id="tab-topo" class="tab-content active">
+    <div class="schematic-box">
+      <div class="box-header">
+        <span class="box-title">📐 BẢN VẼ SƠ ĐỒ HỆ THỐNG MẠNG NỘI BỘ LIÊN 2 TÒA NHÀ (CAMPUS BACKBONE)</span>
+        <span class="box-badge">KIẾN TRÚC DOANH NGHIỆP</span>
+      </div>
+      <pre class="ascii-schematic">
+                                          +-----------------------+
+                                          |   INTERNET / WAN      |
+                                          |      (Dual ISP)       |
+                                          +-----------------------+
+                                                      |
+                                                      | Dual Fiber WAN
+                                                      v
+                                          +-----------------------+
+                                          |    EDGE ROUTER /      |
+                                          |   NEXT-GEN FIREWALL   | &lt;=== Vùng ranh giới ngoài
+                                          |    (HA Cluster Active)|
+                                          +-----------------------+
+                                            /         |         \
+                         +-----------------+          |          +-----------------+
+                         | (DMZ Link)                 |                            | (Guest Link)
+                         v                            v                            v
+              +----------------------+     +---------------------+      +---------------------+
+              |    [SW-DMZ-PUBLIC]   |     |    [CORE SWITCH]    |      |    [SW-GUEST-ISOL]  |
+              | (Public Web/API/DNS) |     |  Layer 3 Multi-Chassis|    | (Chỉ đi Internet)   |
+              +----------------------+     | (Trung tâm điều phối|      +---------------------+
+                         |                 +---------------------+                 |
+                         |                            |                            |
+       +-----------------+-----------------+          |                            |
+       |                                   |          |                            |
++--------------+                   +---------------+  |                            |
+| Web Portal   |                   | Public Mail/  |  |                            |
+| Server       |                   | DNS External  |  |                            |
++--------------+                   +---------------+  |                            |
+                                                      |
+         +--------------------------------------------+--------------------------------------------+
+         |                                                                                         |
+         | Fiber Trunk 10Gbps (Tòa A)                                                              | Fiber Trunk 10Gbps (Tòa B)
+         v                                                                                         v
++-------------------------------+                                                         +-------------------------------+
+|  DISTRIBUTION SWITCH - TÒA A  |                                                         |  DISTRIBUTION SWITCH - TÒA B  |
+|          [DIST-SW-A]          |                                                         |          [DIST-SW-B]          |
++-------------------------------+                                                         +-------------------------------+
+   |         |         |         |         |                                                 |         |         |         |
+   |Trunk    |Trunk    |Trunk    |Trunk    |Trunk                                            |Trunk    |Trunk    |Trunk    |Trunk
+   v         v         v         v         v                                                 v         v         v         v
++-------+ +-------+ +-------+ +-------+ +-------+                                         +-------+ +-------+ +-------+ +-------+
+|IDF-T1 | |IDF-T2 | |IDF-T3 | |IDF-T4 | |IDF-T5 |                                         |IDF-T1 | |IDF-T2 | |IDF-T3 | |IDF-T4 |
+|[SW-T1]| |[SW-T2]| |[SW-T3]| |[SW-T4]| |[SW-T5]|                                         |[SW-T1]| |[SW-T2]| |[SW-T3]| |[SW-T4]|
++-------+ +-------+ +-------+ +-------+ +-------+                                         +-------+ +-------+ +-------+ +-------+
+    |         |         |         |         |                                                 |         |         |         |
+    |         |         |         |         +--&gt; A-501 (Product PM), A-502 (CEO/CTO)          |         |         |         +--&gt; B-401 (PM/BA), B-402 (Training)
+    |         |         |         |              A-503 (Phòng Họp Ban Giám Đốc)                   |         |         |              B-403 (Canteen - Guest Net)
+    |         |         |         |                                                               |         |         |
+    |         |         |         +--&gt; A-401 (QA/Tester), A-402 (UI/UX)                           |         |         +--&gt; B-301 (HR), B-302 (Kế toán)
+    |         |         |              A-403 (DevOps/SysAdmin), A-404 (NOC/SOC)                   |         |              B-303 (Pháp chế), B-304 (CSKH)
+    |         |         |                                                                         |         |
+    |         |         +--&gt; A-301 (Backend Dev), A-302 (Database/Data Eng)                       |         +--&gt; B-201 (Kinh doanh Sales), B-202 (Marketing)
+    |         |              A-303 (Frontend Dev)                                                 |
+    |         |                                                                                   +--&gt; B-101 (Sảnh khách Tòa B), B-102 (Họp đối tác)
+    |         +--&gt; A-201 (Lab Dev-Test), A-202 (IDF Server Tầng), A-203 (IT Helpdesk)
+    |
+    +--&gt; A-101 (Sảnh lễ tân Tòa A), A-102 (Bảo vệ / Camera CCTV / Access Control Gate)
+      </pre>
+    </div>
+  </div>
+
+  <!-- TAB 2: SERVER FARM & DATA CENTER -->
+  <div id="tab-servers" class="tab-content">
+    <div class="schematic-box">
+      <div class="box-header">
+        <span class="box-title">🗄️ BẢN VẼ KẾT NỐI PHÂN VÙNG SERVER FARM & DATA CENTER (RACK SERVER)</span>
+        <span class="box-badge">DATA & INFRA ZONE</span>
+      </div>
+      <pre class="ascii-schematic">
+                                         [CORE SWITCH]
+                                               |
+                                     10Gbps Uplink Redundant
+                                               |
+                                        [SW-SERVER-FARM]
+                                               |
+             +----------------+----------------+----------------+----------------+
+             |                |                |                |                |
+             v                v                v                v                v
+      +--------------+ +--------------+ +--------------+ +--------------+ +--------------+
+      | DHCP SERVER  | |  DNS SERVER  | |  GIT SERVER  | |  APP SERVER  | |  DB SERVER   |
+      | (Cấp IP LAN) | |  (Nội bộ)    | | (Source code)| |  (Production)| | (PostgreSQL/ |
+      |              | |              | |              | |              | |  MySQL Master|
+      +--------------+ +--------------+ +--------------+ +--------------+ +--------------+
+             |                                                                   |
+             |                                                                   | Replica Sync
+             |                                                                   v
+             |                                                            +--------------+
+             |                                                            | DB SLAVE /   |
+             |                                                            | DATA LAKE    |
+             |                                                            +--------------+
+             |                                                                   |
+             +---------------------------------+---------------------------------+
+                                               |
+                                               v
+                                        +--------------+
+                                        |BACKUP SERVER |
+                                        | (Veeam/SAN/  |
+                                        |  NAS Storage)|
+                                        +--------------+
+      </pre>
+    </div>
+  </div>
+
+  <!-- TAB 3: BẢN VẼ CHI TIẾT TỪNG PHÒNG TÒA A -->
+  <div id="tab-rooms-a" class="tab-content">
+    <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+      <span style="color:var(--cyan-tech); font-weight:700;">TÒA A - 5 TẦNG KỸ THUẬT (13 PHÒNG BAN • 91 THÀNH VIÊN)</span>
+      <input type="text" class="search-input" placeholder="Tìm nhanh phòng (VD: A-301, Backend)..." onkeyup="filterRooms('rooms-a-grid', this.value)">
+    </div>
+
+    <div class="rooms-cad-grid" id="rooms-a-grid">
+
+      <!-- A-101 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-101 (TẦNG 1)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|             SẢNH LỄ TÂN              |
+|                                      |
+|    PC01                PC02          |
+|      \                  /            |
+|       \                /             |
+|        --- [SW-A-101] ---            |
+|                 |                    |
+|                [AP]                  |
+|                 |                    |
+|    Printer            IP Phone       |
++--------------------------------------+
+                  |
+             ACCESS VLAN 50 (Guest)
+                  |
+            [DIST-SW-T1-A]
+        </pre>
+      </div>
+
+      <!-- A-102 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-102 (TẦNG 1)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|     PHÒNG BẢO VỆ / ACCESS CONTROL    |
+|                                      |
+|  PC-CCTV01        PC-BARRIER02       |
+|         \              /             |
+|          [SW-POE-A-102]              |
+|           /    |     \               |
+|      CAM01   CAM02   DOOR-CONTROLLER |
+|                                      |
+|  IP-Intercom      NVR-Recorder       |
++--------------------------------------+
+                  |
+            ACCESS VLAN 99 (Camera/Infra)
+                  |
+            [DIST-SW-T1-A]
+        </pre>
+      </div>
+
+      <!-- A-201 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-201 (TẦNG 2)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|        PHÒNG LAB / DEV - TEST        |
+|                                      |
+| PC01  PC02  PC03  PC04  PC05         |
+| PC06  PC07  PC08  PC09  PC10         |
+|                                      |
+|             [SW-A-201]               |
+|              /      \                |
+|          [AP-LAB]  [TEST-SERVER]     |
+|                                      |
+| Test-Phone        Smart-Devices      |
++--------------------------------------+
+                  |
+             ACCESS VLAN 30 (Lab-Isolated)
+                  |
+            [DIST-SW-T2-A]
+        </pre>
+      </div>
+
+      <!-- A-202 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-202 (TẦNG 2)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|     PHÒNG MÁY CHỦ TẦNG (IDF RACK)    |
+|                                      |
+|     +-------------------------+      |
+|     | [PATCH PANEL CAT6 48P]  |      |
+|     | [DIST-SW-A 10G SFP+]    |      |
+|     | [FIREWALL SECONDARY]    |      |
+|     | [UPS 6KVA REDUNDANT]    |      |
+|     +-------------------------+      |
+|                                      |
+| Smart PDU          Sensor Env (Temp) |
++--------------------------------------+
+                  |
+          BACKBONE FIBER TRUNK 10G
+                  |
+            [CORE SWITCH]
+        </pre>
+      </div>
+
+      <!-- A-203 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-203 (TẦNG 2)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|        IT HELPDESK NỘI BỘ            |
+|                                      |
+|  PC01        PC02        PC03  PC04  |
+|    \           \          /     /    |
+|     --------- [SW-A-203] -------     |
+|                   |                  |
+|             [AP-INTERNAL]            |
+|                                      |
+| Test-PC-Bench     Network-Tester     |
++--------------------------------------+
+                  |
+             ACCESS VLAN 80 (IT-Mgmt)
+                  |
+            [DIST-SW-T2-A]
+        </pre>
+      </div>
+
+      <!-- A-301 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-301 (TẦNG 3)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|        PHÒNG BACKEND DEVELOPER       |
+|                                      |
+| PC01 PC02 PC03 PC04 PC05             |
+| PC06 PC07 PC08 PC09 PC10             |
+| PC11 PC12 PC13 PC14 PC15             |
+|                                      |
+|            [SW-BACKEND]              |
+|                 |                    |
+|                [AP]                  |
+|                                      |
+| Network-Printer    IP Phone          |
++--------------------------------------+
+                  |
+             ACCESS VLAN 20 (Backend/App)
+                  |
+            [DIST-SW-T3-A]
+        </pre>
+      </div>
+
+      <!-- A-302 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-302 (TẦNG 3)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|    PHÒNG DATABASE / DATA ENGINEER    |
+|                                      |
+|  PC01    PC02    PC03    PC04        |
+|  PC05    PC06    PC07    PC08        |
+|                                      |
+|           [SW-DATA-ENG]              |
+|                 |                    |
+|          [BASTION-JUMP]              |
+|                                      |
+| Hardware-Token-Hub  IP Phone         |
++--------------------------------------+
+                  |
+          ISOLATED VLAN 15 (Critical Data)
+                  |
+            [DIST-SW-T3-A]
+        </pre>
+      </div>
+
+      <!-- A-303 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-303 (TẦNG 3)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|        PHÒNG FRONTEND DEVELOPER      |
+|                                      |
+| PC01 PC02 PC03 PC04 PC05             |
+| PC06 PC07 PC08 PC09 PC10             |
+| PC11 PC12 PC13 PC14 PC15             |
+|                                      |
+|            [SW-FRONTEND]             |
+|              /       \               |
+|            [AP]     Mobile-Testing   |
+|                                      |
+| Printer            IP Phone          |
++--------------------------------------+
+                  |
+             ACCESS VLAN 10 (Frontend/User)
+                  |
+            [DIST-SW-T3-A]
+        </pre>
+      </div>
+
+      <!-- A-401 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-401 (TẦNG 4)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|          PHÒNG QA / TESTER           |
+|                                      |
+| PC01 PC02 PC03 PC04 PC05             |
+| PC06 PC07 PC08 PC09 PC10             |
+|                                      |
+|              [SW-QA]                 |
+|             /       \                |
+|        [AP-QA]   Device-Farm         |
+|                                      |
+| Simulator-Hub      IP Phone          |
++--------------------------------------+
+                  |
+             ACCESS VLAN 25 (QA-Tester)
+                  |
+            [DIST-SW-T4-A]
+        </pre>
+      </div>
+
+      <!-- A-402 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-402 (TẦNG 4)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|         PHÒNG UI/UX DESIGNER         |
+|                                      |
+|     PC01       PC02       PC03       |
+|     PC04       PC05       PC06       |
+|                                      |
+|             [SW-DESIGN]              |
+|                  |                   |
+|                 [AP]                 |
+|                                      |
+| Color-Calibrator   Plotter-Printer   |
++--------------------------------------+
+                  |
+             ACCESS VLAN 26 (Design)
+                  |
+            [DIST-SW-T4-A]
+        </pre>
+      </div>
+
+      <!-- A-403 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-403 (TẦNG 4)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|       PHÒNG DEVOPS / SYSADMIN        |
+|                                      |
+|  PC01    PC02    PC03    PC04        |
+|  PC05    PC06    PC07    PC08        |
+|                                      |
+|            [SW-DEVOPS]               |
+|                 |                    |
+|           [SECURE-JUMP]              |
+|                                      |
+| Kube-Console       Hardware-MFA-Key  |
++--------------------------------------+
+                  |
+          SECURE VLAN 70 (DevOps-Admin)
+                  |
+            [DIST-SW-T4-A]
+        </pre>
+      </div>
+
+      <!-- A-404 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-404 (TẦNG 4)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|        PHÒNG NOC / SOC (GIÁM SÁT)    |
+|                                      |
+|    PC01      PC02      PC03    PC04  |
+|      \         \        /       /    |
+|       ------ [SW-NOC-SOC] -----      |
+|                   |                  |
+|         [VIDEO-WALL-CONTROLLER]      |
+|                   |                  |
+|        4x Large Monitoring Displays  |
++--------------------------------------+
+                  |
+         PRIORITY VLAN 90 (NOC-Monitoring)
+                  |
+            [DIST-SW-T4-A]
+        </pre>
+      </div>
+
+      <!-- A-501 & A-502 & A-503 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG A-501 / A-502 / A-503 (TẦNG 5)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|     KHỐI SẢN PHẨM & BAN ĐIỀU HÀNH    |
+|                                      |
+| [A-501] PM (PC01..PC05)              |
+| [A-502] CEO (PC01) + CTO (PC02)      |
+| [A-503] Họp HĐQT (Video Conference)  |
+|                                      |
+|             [SW-VIP-T5]              |
+|             /         \              |
+|       [AP-VIP-5G]    Polycom-Conf    |
++--------------------------------------+
+                  |
+             ACCESS VLAN 5 (Executive)
+                  |
+            [DIST-SW-T5-A]
+        </pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 4: BẢN VẼ CHI TIẾT TỪNG PHÒNG TÒA B -->
+  <div id="tab-rooms-b" class="tab-content">
+    <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+      <span style="color:var(--cyan-tech); font-weight:700;">TÒA B - 4 TẦNG KINH DOANH & HỖ TRỢ (10 PHÒNG BAN • 53 THÀNH VIÊN)</span>
+      <input type="text" class="search-input" placeholder="Tìm nhanh phòng (VD: B-201, Sales)..." onkeyup="filterRooms('rooms-b-grid', this.value)">
+    </div>
+
+    <div class="rooms-cad-grid" id="rooms-b-grid">
+
+      <!-- B-101 & B-102 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG B-101 & B-102 (TẦNG 1)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|     SẢNH ĐÓN KHÁCH & HỌP ĐỐI TÁC     |
+|                                      |
+|  [B-101] Sảnh Lễ Tân (PC01, PC02)    |
+|  [B-102] Phòng Họp 8 chỗ             |
+|                                      |
+|             [SW-B-T1]                |
+|             /        \               |
+|      [AP-GUEST-B]   Smart-TV-Conf    |
+|                                      |
+|  Printer-Guest      IP Phone         |
++--------------------------------------+
+                  |
+             ACCESS VLAN 55 (Guest-B)
+                  |
+            [DIST-SW-T1-B]
+        </pre>
+      </div>
+
+      <!-- B-201 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG B-201 (TẦNG 2)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|       PHÒNG KINH DOANH (SALES)       |
+|                                      |
+| PC01 PC02 PC03 PC04 PC05 PC06        |
+| PC07 PC08 PC09 PC10 PC11 PC12        |
+|                                      |
+|             [SW-SALES]               |
+|                 |                    |
+|                [AP]                  |
+|                 |                    |
+| 12x IP Phone (VoIP)  Printer         |
++--------------------------------------+
+                  |
+        TRUNK VLAN 40 (Sales) + VLAN 60 (VoIP)
+                  |
+            [DIST-SW-T2-B]
+        </pre>
+      </div>
+
+      <!-- B-202 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG B-202 (TẦNG 2)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|           PHÒNG MARKETING            |
+|                                      |
+|   PC01    PC02    PC03    PC04       |
+|   PC05    PC06    PC07    PC08       |
+|                                      |
+|              [SW-MKT]                |
+|              /      \                |
+|           [AP]     Color-Printer     |
+|                                      |
+| Digital-Signage    IP Phone          |
++--------------------------------------+
+                  |
+             ACCESS VLAN 45 (Marketing)
+                  |
+            [DIST-SW-T2-B]
+        </pre>
+      </div>
+
+      <!-- B-301 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG B-301 (TẦNG 3)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|           PHÒNG NHÂN SỰ (HR)         |
+|                                      |
+|      PC01      PC02      PC03        |
+|            PC04      PC05            |
+|                                      |
+|              [SW-HR]                 |
+|                 |                    |
+|                [AP]                  |
+|                 |                    |
+| Secure-HR-Printer  Máy chấm công     |
++--------------------------------------+
+                  |
+             SECURE VLAN 35 (HR-Confidential)
+                  |
+            [DIST-SW-T3-B]
+        </pre>
+      </div>
+
+      <!-- B-302 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG B-302 (TẦNG 3)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|       PHÒNG KẾ TOÁN / TÀI CHÍNH      |
+|                                      |
+|   PC01       PC02       PC03         |
+|   PC04       PC05       PC06         |
+|                                      |
+|            [SW-ACCOUNTING]           |
+|                 |                    |
+|        Máy in hóa đơn đỏ             |
+|        Két bảo mật / USB Token Token |
++--------------------------------------+
+                  |
+          STRICT VLAN 36 (Finance-Only)
+                  |
+            [DIST-SW-T3-B]
+        </pre>
+      </div>
+
+      <!-- B-303 & B-304 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG B-303 & B-304 (TẦNG 3)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|       PHÁP CHẾ & CHĂM SÓC KHÁCH HÀNG |
+|                                      |
+| [B-303] Legal: PC01, PC02, PC03      |
+| [B-304] CSKH : PC01 .. PC10          |
+|                                      |
+|             [SW-B-304]               |
+|                 |                    |
+|   10x Call-Center Headset VoIP       |
+|   Call Recording Gateway             |
++--------------------------------------+
+                  |
+        TRUNK VLAN 42 (Legal) + VLAN 60 (VoIP)
+                  |
+            [DIST-SW-T3-B]
+        </pre>
+      </div>
+
+      <!-- B-401 & B-402 & B-403 -->
+      <div class="room-schematic-card">
+        <span class="code-pill">PHÒNG B-401, B-402, B-403 (TẦNG 4)</span>
+        <pre class="ascii-schematic">
++--------------------------------------+
+|      DỰ ÁN, ĐÀO TẠO & KHU TIỆN ÍCH   |
+|                                      |
+| [B-401] PM/BA : PC01 .. PC07         |
+| [B-402] Đào tạo: 20 Chỗ + Projector  |
+| [B-403] Canteen: AP-WiFi Free Guest  |
+|                                      |
+|             [SW-B-T4]                |
+|             /   |   \                |
+|    [AP-TRAIN]  [AP-CANTEEN]  Printer |
++--------------------------------------+
+                  |
+         TRUNK VLAN 22 (PM) + VLAN 55 (Guest)
+                  |
+            [DIST-SW-T4-B]
+        </pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 5: BẢNG QUY HOẠCH VLAN VÀ DẢI IP -->
+  <div id="tab-vlan" class="tab-content">
+    <div class="schematic-box">
+      <div class="box-header">
+        <span class="box-title">📑 BẢNG QUY HOẠCH PHÂN CHIA VLAN & ĐỊA CHỈ IP TOÀN DOANH NGHIỆP</span>
+        <span class="box-badge">SUBNET DESIGN</span>
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border-box); color:var(--cyan-tech);">
+            <th style="padding:10px;">VLAN ID</th>
+            <th style="padding:10px;">Tên VLAN</th>
+            <th style="padding:10px;">Dải Mạng (Subnet CIDR)</th>
+            <th style="padding:10px;">Vị Trí / Phòng Ban</th>
+            <th style="padding:10px;">Gateway IP</th>
+            <th style="padding:10px;">Chính Sách Tường Lửa</th>
+          </tr>
+        </thead>
+        <tbody style="color:#cbd5e1;">
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--amber-tech);">VLAN 5</td>
+            <td>Executive-VIP</td>
+            <td>10.0.5.0/24</td>
+            <td>A-502 (CEO/CTO), A-503 (HĐQT)</td>
+            <td>10.0.5.1</td>
+            <td>Toàn quyền truy cập nội bộ + Ưu tiên QoS</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--cyan-tech);">VLAN 10</td>
+            <td>Dev-Frontend</td>
+            <td>10.0.10.0/24</td>
+            <td>A-303 (Frontend Developer)</td>
+            <td>10.0.10.1</td>
+            <td>Truy cập App Server, Git, Internet</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--cyan-tech);">VLAN 15</td>
+            <td>Data-Core</td>
+            <td>10.0.15.0/24</td>
+            <td>A-302 (Database / Data Eng)</td>
+            <td>10.0.15.1</td>
+            <td>Internal Only, Không ra Internet, Ghi audit log</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--cyan-tech);">VLAN 20</td>
+            <td>Dev-Backend</td>
+            <td>10.0.20.0/24</td>
+            <td>A-301 (Backend Developer)</td>
+            <td>10.0.20.1</td>
+            <td>Truy cập Data Zone qua Port 5432/3306</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--cyan-tech);">VLAN 25</td>
+            <td>QA-Tester</td>
+            <td>10.0.25.0/24</td>
+            <td>A-401 (QA / Tester), A-402 (UI/UX)</td>
+            <td>10.0.25.1</td>
+            <td>Truy cập Staging & Test environments</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--emerald-tech);">VLAN 30</td>
+            <td>Lab-Sandbox</td>
+            <td>10.0.30.0/24</td>
+            <td>A-201 (Lab / Dev-Test)</td>
+            <td>10.0.30.1</td>
+            <td>Cách ly hoàn toàn khỏi Production</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--rose-tech);">VLAN 35/36</td>
+            <td>HR-Finance</td>
+            <td>10.0.35.0/24</td>
+            <td>B-301 (HR), B-302 (Kế toán)</td>
+            <td>10.0.35.1</td>
+            <td>Chỉ vào phần mềm ERP/Kế toán, cách ly Dev</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--blue-accent);">VLAN 40</td>
+            <td>Sales-Marketing</td>
+            <td>10.0.40.0/24</td>
+            <td>B-201 (Sales), B-202 (MKT), B-304</td>
+            <td>10.0.40.1</td>
+            <td>Truy cập CRM, ERP Cloud, Internet</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--purple-tech);">VLAN 50/55</td>
+            <td>Guest-Visitor</td>
+            <td>192.168.100.0/23</td>
+            <td>Sảnh A-101, B-101, Canteen B-403</td>
+            <td>192.168.100.1</td>
+            <td>Internet Only, Chặn toàn bộ IP 10.0.0.0/8</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--emerald-tech);">VLAN 60</td>
+            <td>Voice-VoIP</td>
+            <td>10.0.60.0/24</td>
+            <td>Tất cả các điện thoại IP Call Center</td>
+            <td>10.0.60.1</td>
+            <td>QoS DSCP EF (High Priority) kết nối Tổng đài</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(56,189,248,0.1);">
+            <td style="padding:8px 10px; font-weight:700; color:var(--red);">VLAN 70/90</td>
+            <td>Infra-Mgmt</td>
+            <td>10.0.90.0/24</td>
+            <td>A-403 (DevOps), A-404 (NOC/SOC)</td>
+            <td>10.0.90.1</td>
+            <td>Quyền quản trị Switch, Router, Server Console</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function filterRooms(gridId, keyword) {
+    const term = keyword.toLowerCase().trim();
+    const cards = document.querySelectorAll('#' + gridId + ' .room-schematic-card');
+    cards.forEach(card => {
+      const text = card.innerText.toLowerCase();
+      if (text.includes(term)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
