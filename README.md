@@ -759,9 +759,9 @@ interface Vlan10
 | 3. Cấu hình Bộ 4 Extended ACLs, Port Security & Đẩy Syslog từ Switch/Core | C | C | **R / A** | I | I |
 | 4. Cài đặt Máy chủ Wazuh SIEM & Tích hợp Bot Cảnh báo Telegram | **R / A** | I | C | C | I |
 | 5. Cài Wazuh Agent Máy chủ Linux & Diễn tập Tấn công (Nmap, Hydra) | C | I | I | **R / A** | C |
-| 6. Cài Wazuh Agent Máy trạm Windows & Test hành vi nội bộ (Logon Fail) | C | I | I | **A** | **R** |
-| 7. Thiết kế Dashboard SOC trực quan hóa & Phân tích Sự cố | **A** | I | I | C | **R** |
-| 8. Soạn thảo Báo cáo Đồ án Tổng thể & Thiết kế Slide Bảo vệ | **A** | C | C | C | **R** |
+| 6. Cài Wazuh Agent Máy trạm Windows & Test hành vi nội bộ (Logon Fail) | C | I | I | **R / A** | C |
+| 7. Thiết kế Dashboard SOC trực quan hóa & Phân tích Sự cố | **R / A** | I | I | C | C |
+| 8. Soạn thảo Báo cáo Đồ án Tổng thể & Thiết kế Slide Bảo vệ | **R / A** | C | C | C | C |
 
 > **Quy ước:** **R** (*Responsible*) = Người trực tiếp thực hiện; **A** (*Accountable*) = Người kiểm tra, nghiệm thu; **C** (*Consulted*) = Người hỗ trợ, cố vấn; **I** (*Informed*) = Người theo dõi tiến độ.
 
