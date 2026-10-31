@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""
+Wazuh custom integration: send selected Wazuh alerts to Telegram.
+
+Expected Wazuh integration arguments:
+  argv[1] = path to alert JSON file
+  argv[2] = Telegram Bot Token (provided by Wazuh api_key)
+  argv[3] = Telegram Chat ID (provided by Wazuh hook_url)
+
+Do not hard-code the Bot Token in this file.
+"""
+import json
+import sys
+import urllib.parse
+import urllib.request
+import urllib.error
+
+LOG_PATH = "/var/ossec/logs/integrations.log"
+
+
+def write_log(message: str) -> None:
+    with open(LOG_PATH, "a", encoding="utf-8") as log_file:
+        log_file.write(message + "\n")
+
+
+def main() -> None:
+    if len(sys.argv) < 4:
+        write_log("ERROR: Missing integration arguments")
+        sys.exit(1)
+
+    alert_file = sys.argv[1]
+    bot_token = sys.argv[2]
+    chat_id = sys.argv[3]
+
+    try:
+        with open(alert_file, "r", encoding="utf-8") as file:
+            alert = json.load(file)
+
+        rule = alert.get("rule", {})
+        agent = alert.get("agent", {})
+
+        message = (
+            "🚨 WAZUH SECURITY ALERT\n\n"
+            f"Severity: {rule.get('level', 'N/A')}\n"
+            f"Rule ID: {rule.get('id', 'N/A')}\n"
+            f"Description: {rule.get('description', 'N/A')}\n"
+            f"Agent: {agent.get('name', 'N/A')}\n"
+            f"Agent ID: {agent.get('id', 'N/A')}\n"
+            f"Agent IP: {agent.get('ip', 'N/A')}\n"
+            f"Timestamp: {alert.get('timestamp', 'N/A')}"
+        )
+
+        payload = urllib.parse.urlencode({
+            "chat_id": chat_id,
+            "text": message
+        }).encode()
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        request = urllib.request.Request(url, data=payload, method="POST")
+
+        with urllib.request.urlopen(request, timeout=15) as response:
+            result = json.loads(response.read().decode())
+
+        if result.get("ok"):
+            write_log(
+                f"SUCCESS: rule={rule.get('id')} "
+                f"agent={agent.get('name')}"
+            )
+        else:
+            write_log("ERROR: Telegram API returned failure")
+            sys.exit(1)
+
+    except urllib.error.HTTPError as error:
+        write_log(f"HTTP ERROR: status={error.code}")
+        sys.exit(1)
+    except Exception as error:
+        # Avoid logging tokens, request URLs, or other sensitive values.
+        write_log(f"ERROR: {type(error).__name__}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
