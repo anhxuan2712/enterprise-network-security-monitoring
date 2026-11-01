@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""
-Wazuh custom integration: send selected Wazuh alerts to Telegram.
 
-Expected Wazuh integration arguments:
-  argv[1] = path to alert JSON file
-  argv[2] = Telegram Bot Token (provided by Wazuh api_key)
-  argv[3] = Telegram Chat ID (provided by Wazuh hook_url)
-
-Do not hard-code the Bot Token in this file.
-"""
 import json
 import sys
 import urllib.parse
