@@ -8,10 +8,6 @@
 | Giai đoạn | Giai đoạn 3 – Phòng chống tấn công bên ngoài và bên trong nội bộ |
 | Phạm vi | Hệ thống mạng mô phỏng gồm các switch tầng/khu vực, switch trung tâm và máy chủ Syslog |
 
-> **Lưu ý:** Các địa chỉ IP chưa được xác nhận bằng cấu hình thực tế
-> được ghi rõ là kế hoạch/đề xuất. Cần đối chiếu `running-config` trước
-> khi chốt nghiệm thu.
-
 ## MỤC LỤC
 
 **PHẦN I – Cấu hình địa chỉ IP, Syslog và Port Security**
