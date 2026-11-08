@@ -18,7 +18,7 @@
 - [I.4. Cấu hình Port Security](#i4-cấu-hình-port-security)
 - [I.5. Kiểm tra và đánh giá kết quả](#i5-kiểm-tra-và-đánh-giá-kết-quả)
 - [I.6. Tiến độ thực hiện giai đoạn 3](#i6-tiến-độ-thực-hiện-giai-đoạn-3)
-**PHẦN II – Các giải pháp phòng chống tấn công**
+- **PHẦN II – Các giải pháp phòng chống tấn công**
 
 - [II.1. Tổng quan tiến độ](#ii1-tổng-quan-tiến-độ)
 - [II.2. Bảng ma trận phân chia nhiệm vụ](#ii2-bảng-ma-trận-phân-chia-nhiệm-vụ)
@@ -183,7 +183,7 @@ nhận trạng thái thực tế trước khi nghiệm thu.
 | 4 | Kiểm tra sticky MAC và violation | Đã xác nhận SW-Tang2 Fa0/2: Secure-up, Restrict, 0 violation |
 | 5 | Hoàn thiện hồ sơ và nghiệm thu | Đang cập nhật minh chứng cho các switch còn lại |
 
----
+----
 
 # PHẦN II – CÁC GIẢI PHÁP PHÒNG CHỐNG TẤN CÔNG
 
