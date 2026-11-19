@@ -6,7 +6,56 @@
 > **Người soạn thảo:** Nguyễn Phúc Vượng  
 > **Người duyệt / Chủ trì đề tài:** Nguyễn Anh Xuân  
 > **Kiến trúc cốt lõi:** Phân vùng an ninh Zone-based Segmentation (Zero Trust Principles), Mô hình 2 lớp Collapsed-Core, Trục cáp quang Single-Mode OS2 10Gbps qua 9 Tủ trung chuyển quang IDF & Trung tâm MDF A-202, Mô hình Thực nghiệm Lab thu nhỏ (Core L3 Switch, 6 VLAN đại diện, Wazuh SIEM All-in-One, Rsyslog Server, 4 Extended ACLs cốt lõi, Port Security, Đồng bộ NTP tập trung, Telegram Alerting & SOC 24/7).  
-> **Tài liệu thiết kế mặt bằng chi tiết:** [ban thiet ke doanh nghiep/index-v2.html](file:///d:/Academy/Computer%20Network%20Safety%20Analysis%20and%20Design/ban%20thiet%20ke%20doanh%20nghiep/index-v2.html) *(Phiên bản 3.1)*
+> **Tài liệu thiết kế mặt bằng chi tiết:** [blueprints/index.html](blueprints/index.html) *(Phiên bản 3.1)*
+
+---
+
+## 📂 CẤU TRÚC THƯ MỤC DỰ ÁN (PROJECT DIRECTORY STRUCTURE)
+
+Hệ thống thư mục của đề tài đã được chuẩn hóa khoa học theo tiêu chuẩn kỹ thuật mạng & an toàn thông tin:
+
+```text
+Computer Network Safety Analysis and Design/
+├── README.md                            # Tài liệu kiến trúc tổng thể (Single Source of Truth)
+├── docs/                                # Báo cáo, đề cương và hồ sơ đặc tả kỹ thuật
+│   ├── project-charter.png              # Ảnh chụp đề cương và yêu cầu từ giảng viên
+│   ├── specs/                           # Hồ sơ phân tích phần cứng và quy hoạch IP/VLAN
+│   │   ├── bang-quy-hoach-ip-vlan.docx  # Bảng quy hoạch IP tĩnh, động & 30 VLAN
+│   │   ├── thiet-ke-thiet-bi-tung-phong.md # Bảng bố trí thiết bị chi tiết 26 phòng ban
+│   │   └── phan-tich-phan-cung-ha-tang.md  # BoM phần cứng (Cisco, FortiGate, Dell)
+│   └── reports/                         # Báo cáo tiến độ các giai đoạn (nộp giảng viên)
+│       ├── bao-cao-giai-doan-3.docx     # Báo cáo Word GĐ 3 (IP, Syslog, Port Security)
+│       ├── phase-3-summary.md           # Tóm tắt kỹ thuật GĐ 3
+│       ├── bao-cao-giai-doan-4-wazuh.docx # Báo cáo Word GĐ 4 (Wazuh SIEM, Telegram)
+│       ├── phase-4-summary.md           # Tóm tắt kỹ thuật GĐ 4
+│       ├── bao-cao-giai-doan-5-pentest.docx # Báo cáo Word GĐ 5 (Diễn tập tấn công)
+│       └── phase-5-summary.md           # Tóm tắt chi tiết 5 kịch bản diễn tập GĐ 5
+│
+├── simulations/                         # Các sơ đồ mô phỏng hệ thống mạng (Cisco Packet Tracer)
+│   ├── README.md                        # Hướng dẫn mở và kiểm thử sơ đồ mạng
+│   ├── phase-1-2-topology.pkt           # Sơ đồ topo thiết kế ban đầu
+│   └── phase-3-configured-security.pkt  # Sơ đồ hoàn thiện cấu hình IP, Syslog & Port Security
+│
+├── blueprints/                          # Bản vẽ thiết kế mặt bằng kỹ thuật & Rack U
+│   ├── README.md                        # Hướng dẫn xem bản vẽ tương tác
+│   ├── index.html                       # Trình xem tương tác 26 phòng ban (Tòa A & B)
+│   └── floorplans-archive.pdf.bz2       # File nén bản vẽ CAD/PDF từng phòng
+│
+├── monitoring/                          # Cấu hình hệ thống giám sát & quản lý nhật ký
+│   ├── README.md                        # Hướng dẫn cấu hình SIEM, Syslog và Telegram
+│   ├── wazuh/                           # Cấu hình máy chủ Wazuh SIEM
+│   │   └── ossec.conf                   # Cấu hình Wazuh Manager & Syslog listener UDP 514
+│   └── alerts/                          # Tích hợp tự động hóa cảnh báo
+│       └── custom-telegram.py           # Script webhook cảnh báo tức thời qua Telegram Bot
+│
+├── security-testing/                    # Kịch bản kiểm thử, diễn tập tấn công & nghiệm thu
+│   └── README.md                        # Hướng dẫn chạy 5 kịch bản pentest trên Kali Linux
+│
+└── archive/                             # Lưu trữ các bản nháp / phiên bản cũ (an toàn dữ liệu)
+    ├── index-v1.html
+    ├── ban-thiet-ke-he-thong-v1.pkt
+    └── phase-1-2-readme-raw.md
+```
 
 ---
 
@@ -63,7 +112,7 @@
 ---
 
 ### 1.2 Cơ cấu tổ chức & Bảng phân bổ 26 phòng ban chi tiết (Tòa A & B)
-*(Đồng bộ 100% với Bản vẽ thiết kế mặt bằng kỹ thuật [index-v2.html](file:///d:/Academy/Computer%20Network%20Safety%20Analysis%20and%20Design/ban%20thiet%20ke%20doanh%20nghiep/index-v2.html))*
+*(Đồng bộ 100% với Bản vẽ thiết kế mặt bằng kỹ thuật [blueprints/index.html](blueprints/index.html))*
 
 #### 🏢 TÒA A - VẬN HÀNH KỸ THUẬT & TRUNG TÂM R&D (5 TẦNG - 15 PHÒNG - 91 NHÂN SỰ)
 
@@ -772,7 +821,7 @@ interface Vlan10
 ### 📦 1. Sản phẩm bàn giao nghiệm thu đồ án:
 1. **Báo cáo chuyên đề hoàn chỉnh (Đóng quyển 50 ÷ 70 trang):** Soạn thảo chuẩn cấu trúc theo đề cương môn học.
 2. **Slide thuyết trình bảo vệ (10 ÷ 15 slide):** Trình bày trực quan, đầy đủ luận điểm kiến trúc và kết quả thử nghiệm.
-3. **Bản vẽ thiết kế mặt bằng & sơ đồ chi tiết 26 phòng ban:** File [ban thiet ke doanh nghiep/index-v2.html](file:///d:/Academy/Computer%20Network%20Safety%20Analysis%20and%20Design/ban%20thiet%20ke%20doanh%20nghiep/index-v2.html) *(Phiên bản 3.1)* kèm bản in PDF kỹ thuật.
+3. **Bản vẽ thiết kế mặt bằng & sơ đồ chi tiết 26 phòng ban:** File [blueprints/index.html](blueprints/index.html) *(Phiên bản 3.1)* kèm bản in PDF kỹ thuật trong [blueprints/floorplans-archive.pdf.bz2](blueprints/floorplans-archive.pdf.bz2).
 4. **Bảng địa chỉ IP & VLAN Plan:** Bảng quy hoạch IP chi tiết 30 VLANs kèm dải cấp phát DHCP.
 5. **Danh sách chính sách an toàn (Security Policy Catalog):** Tập hợp bộ 4 Extended ACLs, cấu hình Port Security và Rule cảnh báo Wazuh XML.
 6. **File mô phỏng thực nghiệm:** File Cisco Packet Tracer / EVE-NG sẵn sàng chạy demo 7 kịch bản kiểm thử.
