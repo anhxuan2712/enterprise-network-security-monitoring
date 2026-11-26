@@ -31,10 +31,11 @@ Computer Network Safety Analysis and Design/
 │       ├── bao-cao-giai-doan-5-pentest.docx # Báo cáo Word GĐ 5 (Diễn tập tấn công)
 │       └── phase-5-summary.md           # Tóm tắt chi tiết 5 kịch bản diễn tập GĐ 5
 │
-├── simulations/                         # Các sơ đồ mô phỏng hệ thống mạng (Cisco Packet Tracer)
+├── simulations/                         # Các sơ đồ mô phỏng hệ thống mạng (Packet Tracer & EVE-NG/GNS3)
 │   ├── README.md                        # Hướng dẫn mở và kiểm thử sơ đồ mạng
-│   ├── phase-1-2-topology.pkt           # Sơ đồ topo thiết kế ban đầu
-│   └── phase-3-configured-security.pkt  # Sơ đồ hoàn thiện cấu hình IP, Syslog & Port Security
+│   ├── eve-ng-gns3-topology.png         # Sơ đồ topo lab thực nghiệm EVE-NG / GNS3 (Router1, ASAv, Sw0/1/2, Cloud VM)
+│   ├── phase-1-2-topology.pkt           # Sơ đồ topo thiết kế ban đầu (Packet Tracer)
+│   └── phase-3-configured-security.pkt  # Sơ đồ hoàn thiện cấu hình IP, Syslog & Port Security (Packet Tracer)
 │
 ├── blueprints/                          # Bản vẽ thiết kế mặt bằng kỹ thuật & Rack U
 │   ├── README.md                        # Hướng dẫn xem bản vẽ tương tác
@@ -426,9 +427,55 @@ Hệ thống tài liệu thiết kế quy hoạch đầy đủ **30 VLANs** đ�
 Báo cáo xác định rõ 2 phương án công cụ mô phỏng để phù hợp với điều kiện phòng lab:
 
 * **Phương án 1: EVE-NG hoặc GNS3 kết hợp VMware Workstation (Môi trường Khuyến nghị Tốt nhất):**
-  - Sử dụng Router/Switch Cisco chạy Image Cisco IOL hoặc IOSv/IOSvL2.
-  - Switch Core và Access trong EVE-NG/GNS3 được đấu nối ra các máy ảo VMware thông qua **Cloud Interface (vnet/tap bridge)**.
+  - Sử dụng Router/Switch Cisco chạy Image Cisco IOL hoặc IOSv/IOSvL2 cùng Tường lửa ảo **Cisco ASAv (asav-0)**.
+  - Switch Core (`Switch0`) và các Switch phân vùng (`Switch1`, `Switch2`) trong EVE-NG/GNS3 được đấu nối ra các máy ảo VMware thông qua các **Cloud Interface / External Connector (vnet/tap bridge)**:
+    - **External Connector1:** Đấu nối trực tiếp vào máy ảo **VM1 (Wazuh SIEM All-in-One & Rsyslog Server `192.168.10.40/50`)**.
+    - **External Connector2:** Đấu nối trực tiếp vào máy ảo **VM2 (Linux Multi-Services DHCP/NTP/Web/DB)**.
+    - **External Connector3:** Đấu nối trực tiếp vào các máy ảo trạm **VM3 (Windows Client)** & **VM4 (Kali Linux Pentest)**.
+  - Cổng `E0/2` trên `Switch2` kết nối trực tiếp với node **PC Test Port Security** để kiểm chứng cơ chế tự động khóa cổng (`err-disable / shutdown`) khi phát hiện vi phạm địa chỉ MAC.
   - Toàn bộ gói tin mạng, phiên DHCP Relay, gói tin ACL Drop và thông điệp Syslog (`%SEC-6-IPACCESSLOGP`, `%PORT_SECURITY-2-PSECURE_VIOLATION`) được switch Cisco thật đẩy trực tiếp qua UDP 514 tới máy chủ Rsyslog/Wazuh trong thời gian thực.
+
+---
+
+#### 🗺️ 4. Sơ Đồ Đấu Nối Chi Tiết Mô Hình Thực Nghiệm EVE-NG / GNS3:
+
+Dưới đây là sơ đồ topo triển khai thực tế trên môi trường ảo hóa mạng EVE-NG / GNS3 tích hợp cụm máy ảo giám sát:
+
+![Sơ đồ Mô phỏng Thực nghiệm EVE-NG / GNS3](simulations/eve-ng-gns3-topology.png)
+
+```text
+               [ External Connector (WAN / NAT) ]
+                               │ E0/0
+                          [ Router1 ]
+                               │ E0/1
+                               │ G0/1
+                        [ asav-0 (ASAv) ]
+                               │ G0/0
+                               │ E0/0
+                         [ Switch0 (Core) ]
+                        ┌──────┴──────┐
+                   E0/1 │             │ E0/2
+                   E0/0 │             │ E0/0
+                   [ Switch1 ]   [ Switch2 ]
+                  ┌─────┴─────┐       ┌─────┴─────┐
+             E0/1 │      E0/2 │  E0/3 │      E0/2 │
+                  │           │       │           : (Port Security Violation - Shutdown)
+               [Cloud1]    [Cloud2] [Cloud3]    [PC Test Port Security]
+              (VM Wazuh)   (VM Web) (VM Win/Kali)
+```
+
+**Bảng Ánh Xạ Cổng & Vai Trò Các Thiết Bị Trong Mô Hình EVE-NG / GNS3:**
+
+| Thiết bị / Node | Cổng kết nối | Kết nối tới | Mục đích & Vai trò an ninh |
+| :--- | :--- | :--- | :--- |
+| **External Connector** | Cloud | `Router1` (E0/0) | Cổng kết nối ra mạng ngoài / Internet / Gateway NAT vật lý. |
+| **Router1** | `E0/0`<br>`E0/1` | `External Connector`<br>`asav-0` (G0/1) | Biên định tuyến dịch vụ mạng; chuyển tiếp lưu lượng ra vào tường lửa Cisco ASAv. |
+| **asav-0** (Cisco ASAv) | `G0/1` (Outside)<br>`G0/0` (Inside) | `Router1` (E0/1)<br>`Switch0` (E0/0) | Tường lửa kiểm soát biên an ninh Statefull Packet Inspection; phân định vùng Outside không tin cậy và vùng Inside nội bộ. |
+| **Switch0** (Core/Distribution) | `E0/0`<br>`E0/1`<br>`E0/2` | `asav-0` (G0/0)<br>`Switch1` (E0/0)<br>`Switch2` (E0/0) | Switch trung tâm định tuyến Inter-VLAN L3, kết nối Inside Firewall và phân phối 2 nhánh Switch mạng nội bộ qua Trunk link. |
+| **Switch1** (Phân vùng Dịch vụ) | `E0/0`<br>`E0/1`<br>`E0/2` | `Switch0` (E0/1)<br>`External Connector1`<br>`External Connector2` | Switch phân phối cụm Server Farm:<br>• **E0/1:** Cầu nối Cloud sang **VM1 (Wazuh SIEM + Rsyslog Server)**.<br>• **E0/2:** Cầu nối Cloud sang **VM2 (Multi-Service Linux DHCP/NTP/Web/DB)**. |
+| **Switch2** (Phân vùng Người dùng) | `E0/0`<br>`E0/3`<br>`E0/2` | `Switch0` (E0/2)<br>`External Connector3`<br>`PC Test Port Security` (E0) | Switch phân vùng trạm người dùng & diễn tập kiểm thử:<br>• **E0/3:** Cầu nối Cloud sang **VM3 (Windows Client)** & **VM4 (Kali Pentest)**.<br>• **E0/2:** Cổng thử nghiệm **Port Security** (cấu hình Sticky MAC; khi cắm thiết bị lạ trái phép, cổng tự động chuyển sang trạng thái `err-disable / shutdown` hiển thị vạch đứt nét & dấu X đỏ, đẩy cảnh báo về SIEM). |
+| **PC Test Port Security** | `E0` | `Switch2` (E0/2) | Node máy trạm giả lập thiết bị lạ cắm vào mạng nội bộ nhằm kích hoạt vi phạm an ninh cổng vật lý. |
+
 * **Phương án 2: Cisco Packet Tracer kết hợp VMware Workstation (Phương án Mô phỏng Độc lập):**
   - Do Cisco Packet Tracer không hỗ trợ đấu nối card mạng trực tiếp ra máy ảo VMware bên ngoài hệ điều hành máy chủ, nhóm phân định rõ phạm vi triển khai:
     1. **Phần Hạ tầng Mạng & ACLs:** Triển khai trên Cisco Packet Tracer để kiểm tra bảng định tuyến Inter-VLAN, cấp phát DHCP qua `ip helper-address`, kiểm tra bảng chặn `show ip access-lists` và kiểm tra Port Security.

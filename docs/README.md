@@ -6,8 +6,9 @@ Thư mục lưu trữ toàn bộ hồ sơ kỹ thuật, bảng đặc tả và b
 
 ## 📂 Danh mục tài liệu
 
-### 1. `project-charter.png`
-- Ảnh chụp đề cương và yêu cầu chi tiết đề tài từ giảng viên phụ trách.
+### 1. Hình ảnh sơ đồ và đề cương
+- **`project-charter.png`**: Ảnh chụp đề cương và yêu cầu chi tiết đề tài từ giảng viên phụ trách.
+- **`eve-ng-gns3-topology.png`**: Sơ đồ topo mô phỏng thực nghiệm kết nối mạng và cụm máy ảo giám sát trên nền tảng EVE-NG / GNS3.
 
 ### 2. Thư mục đặc tả kỹ thuật (`docs/specs/`)
 - **`bang-quy-hoach-ip-vlan.docx`**: Bảng quy hoạch địa chỉ IP tĩnh, dải cấp phát động DHCP và phân chia 30 VLAN toàn doanh nghiệp.

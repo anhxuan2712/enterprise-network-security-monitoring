@@ -93,22 +93,50 @@ Tạo Telegram Bot và sử dụng Bot Token cùng Chat ID để cấu hình kê
 
 ---
 
-## 4. Kiến trúc tích hợp Syslog từ GNS3 (công việc tiếp theo)
+## 4. Kiến trúc tích hợp Syslog từ mô hình EVE-NG / GNS3
 
-Tại thời điểm lập báo cáo, mô hình GNS3 của nhóm chưa hoàn tất nên phần tiếp nhận Syslog từ Router/Switch chưa được triển khai và chưa có kết quả kiểm thử thực tế. Kiến trúc dự kiến tận dụng chính Wazuh Server `192.168.181.20` làm máy chủ nhận Syslog, không cần tạo thêm một máy ảo riêng cho rsyslog.
+Mô hình thực nghiệm mạng trên **EVE-NG / GNS3** đã được thiết lập với đầy đủ các thành phần phân vùng an ninh: Router biên (`Router1`), Tường lửa (`asav-0`), Core Switch L3 (`Switch0`), các Switch phân phối (`Switch1`, `Switch2`), node kiểm thử an ninh cổng (`PC Test Port Security`), và các cầu nối **External Connector** kết nối trực tiếp sang cụm máy ảo VMware Workstation:
 
+![Sơ đồ Topo Lab EVE-NG / GNS3](../../simulations/eve-ng-gns3-topology.png)
+
+```text
+               [ External Connector (WAN / NAT) ]
+                               │ E0/0
+                          [ Router1 ]
+                               │ E0/1
+                               │ G0/1
+                        [ asav-0 (ASAv) ]
+                               │ G0/0
+                               │ E0/0
+                         [ Switch0 (Core) ]
+                        ┌──────┴──────┐
+                   E0/1 │             │ E0/2
+                   E0/0 │             │ E0/0
+                   [ Switch1 ]   [ Switch2 ]
+                  ┌─────┴─────┐       ┌─────┴─────┐
+             E0/1 │      E0/2 │  E0/3 │      E0/2 │
+                  │           │       │           : (Port Security Violation - Shutdown)
+               [Cloud1]    [Cloud2] [Cloud3]    [PC Test Port Security]
+              (VM Wazuh)   (VM Web) (VM Win/Kali)
 ```
-Router/Switch GNS3  →  Syslog UDP/TCP 514  →  rsyslog  →  File log
-                    →  Wazuh Manager (localfile/Decoder/Rules)  →  Dashboard / Telegram
+
+Luồng đẩy dữ liệu nhật ký an toàn mạng:
+```text
+Router1 / asav-0 / Switch0 / Switch1 / Switch2 
+       → Syslog UDP/TCP 514 qua External Connector1 
+       → Rsyslog Receiver (192.168.10.50 / 192.168.181.20) 
+       → File log (/var/log/network/network.log) 
+       → Wazuh Manager (localfile / Decoders / Rules) 
+       → Dashboard / Telegram Alerting
 ```
 
 1. Cài đặt/cấu hình rsyslog trên Wazuh Server để lắng nghe Syslog UDP hoặc TCP port 514.
 2. Tạo thư mục và quy tắc lưu log mạng, ví dụ `/var/log/network/`; thiết lập quyền đọc phù hợp cho Wazuh.
-3. Cấu hình Router/Switch trong GNS3 gửi Syslog đến `192.168.181.20`.
+3. Cấu hình Router1, asav-0 và các Switch gửi Syslog đến máy chủ Wazuh qua cầu nối External Connector.
 4. Kiểm tra gói tin Syslog đến máy chủ và xác minh nội dung log được ghi vào file.
 5. Khai báo file log trong `ossec.conf` bằng `localfile` với định dạng phù hợp.
-6. Kiểm tra Wazuh đọc được log; xây dựng Decoder/Rules cho các sự kiện cần giám sát.
-7. Tạo sự kiện kiểm thử trên thiết bị mạng, xác minh cảnh báo trên Dashboard và Telegram.
+6. Kiểm tra Wazuh đọc được log; xây dựng Decoder/Rules cho các sự kiện cần giám sát (ACL Deny, Port Security Violation).
+7. Tạo sự kiện kiểm thử trên thiết bị mạng (kích hoạt vi phạm Port Security trên Switch2 cổng `E0/2`), xác minh cảnh báo trên Dashboard và Telegram.
 
 > [!NOTE]
 > **Lưu ý kỹ thuật:** rsyslog có nhiệm vụ tiếp nhận và ghi log; Wazuh mới là thành phần phân tích log thông qua localfile, Decoder và Rules. Việc nhận được Syslog không đồng nghĩa Wazuh đã nhận diện được mọi kiểu tấn công. Một số sự kiện cần bật logging trên thiết bị, tùy chỉnh Decoder/Rules hoặc kết hợp nhiều nguồn log.
